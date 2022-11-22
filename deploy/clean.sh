@@ -6,8 +6,11 @@ pwd=${PWD}
 
 function clean() {
   docker stop ${CONTAINER_NAME}
+  echo "stop ${CONTAINER_NAME}"
   docker rm ${CONTAINER_NAME}
+  echo "rm ${CONTAINER_NAME}"
   sudo rm -rf ${pwd}/peers/${CONTAINER_NAME}
+  echo "rm -rf ${pwd}/peers/${CONTAINER_NAME}"
 }
 
 clean

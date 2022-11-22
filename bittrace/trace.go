@@ -85,6 +85,7 @@ func (data *TraceData) CurrentFinalSnapshot() *structure.Snapshot {
 func (data *TraceData) AddRevision(revision *structure.Revision) {
 	data.revisionList = append(data.revisionList, revision)
 	Info("add a revision:[%+v]", *revision)
+	// TODO 这里评估下是否可以直接加到 snapshot，一次性输出完毕
 }
 
 func (data *TraceData) LastRevision() *structure.Revision {

@@ -3,23 +3,23 @@
 ## clone this project and prepare
 
 ```shell
-git clone https://github.com/1uvu/bitlog.git
-cd bitlog/btcd
-mkdir docker-compose/tmpl/
+git clone https://github.com/BitTraceProject/btcd.git
+cd btcd/deploy
+mkdir tmpl/
 ```
 
 ## modify `.env.tmpl` with the help of comments
 
 ```shell
-cp docker-compose/example/.env.example docker-compose/tmpl/.env.tmpl
-nano docker-compose/tmpl/.env.tmpl
+cp example/.env.example tmpl/.env.tmpl
+nano tmpl/.env.tmpl
 ```
 
 ## modify `btcd.conf.tmpl` with the help of comments
 
 ```shell
-cp docker-compose/example/btcd.config.example docker-compose/tmpl/btcd.config.tmpl
-nano docker-compose/tmpl/btcd.config.tmpl
+cp example/btcd.config.example tmpl/btcd.config.tmpl
+nano tmpl/btcd.config.tmpl
 ```
 
 ## run bootstrap.sh

@@ -1332,7 +1332,7 @@ out:
 					finalSnapshot := bittrace.FinalSnapshot(traceData.CurrentInitSnapshot().ID, time.Now(), bittrace.GetFinalStatus())
 					traceData.SetFinalSnapshot(&finalSnapshot)
 
-					bittrace.Info("final trace data:[%+v]", traceData)
+					bittrace.Info("final trace data:[%+v]", *traceData)
 				}
 			case *invMsg:
 				sm.handleInvMsg(msg)
@@ -1367,7 +1367,7 @@ out:
 					finalSnapshot := bittrace.FinalSnapshot(traceData.CurrentInitSnapshot().ID, time.Now(), bittrace.GetFinalStatus())
 					traceData.SetFinalSnapshot(&finalSnapshot)
 
-					bittrace.Info("final trace data:[%+v]", traceData)
+					bittrace.Info("final trace data:[%+v]", *traceData)
 				}
 
 				msg.reply <- processBlockResponse{

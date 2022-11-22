@@ -66,7 +66,7 @@ func NewTraceData() *TraceData {
 
 func (data *TraceData) SetInitSnapshot(snapshot *structure.Snapshot) {
 	data.initSnapshot = snapshot
-	Info("got a init snapshot:[%+v]", snapshot)
+	Info("got a init snapshot:[%+v]", *snapshot)
 }
 
 func (data *TraceData) CurrentInitSnapshot() *structure.Snapshot {
@@ -75,7 +75,7 @@ func (data *TraceData) CurrentInitSnapshot() *structure.Snapshot {
 
 func (data *TraceData) SetFinalSnapshot(snapshot *structure.Snapshot) {
 	data.finalSnapshot = snapshot
-	Info("got a final snapshot:[%+v]", snapshot)
+	Info("got a final snapshot:[%+v]", *snapshot)
 }
 
 func (data *TraceData) CurrentFinalSnapshot() *structure.Snapshot {
@@ -84,7 +84,7 @@ func (data *TraceData) CurrentFinalSnapshot() *structure.Snapshot {
 
 func (data *TraceData) AddRevision(revision *structure.Revision) {
 	data.revisionList = append(data.revisionList, revision)
-	Info("add a revision:[%+v]", revision)
+	Info("add a revision:[%+v]", *revision)
 }
 
 func (data *TraceData) LastRevision() *structure.Revision {

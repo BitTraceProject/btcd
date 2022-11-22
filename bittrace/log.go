@@ -1,6 +1,9 @@
 package bittrace
 
-import "log"
+import (
+	"fmt"
+	"log"
+)
 
 //import (
 //	bitlog_common "github.com/1uvu/bitlog/pkg/common"
@@ -42,17 +45,17 @@ import "log"
 //}
 
 func Info(format string, msg ...interface{}) {
-	log.Printf(format, msg)
+	log.Println(fmt.Sprintf(format, msg))
 }
 
 func Warn(format string, msg ...interface{}) {
-	log.Printf(format, msg)
+	log.Println(fmt.Sprintf(format, msg))
 }
 
 func Error(format string, msg ...interface{}) {
-	log.Printf(format, msg)
+	log.Println(fmt.Sprintf(format, msg))
 }
 
 func Fatal(format string, msg ...interface{}) {
-	log.Printf(format, msg)
+	log.Println(fmt.Sprintf(format, msg))
 }

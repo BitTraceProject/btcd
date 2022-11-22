@@ -22,8 +22,8 @@ ENV GO111MODULE=on
 ENV GOARCH=$GOARCH
 ENV GOOS=linux
 
-ADD . /bitlog
-WORKDIR /bitlog
+ADD . /bittrace
+WORKDIR /bittrace
 
 RUN set -ex \
   && go env -w GO111MODULE=on \

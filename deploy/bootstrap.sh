@@ -2,7 +2,7 @@
 
 subnet_name=btcd_peer_network
 temp_dir=temp
-pwd=${PWD}/docker-compose
+pwd=${PWD}
 
 function precheck() {
   if [ ! -f "${pwd}/tmpl/.env.tmpl" ]; then

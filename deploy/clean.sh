@@ -5,6 +5,7 @@ temp_dir=temp
 pwd=${PWD}
 
 function clean() {
+  CONTAINER_NAME=$1
   source ${pwd}/peers/${CONTAINER_NAME}/.env
   docker stop ${CONTAINER_NAME}
   echo "stop ${CONTAINER_NAME}"

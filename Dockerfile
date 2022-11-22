@@ -28,6 +28,7 @@ WORKDIR /bitlog
 RUN set -ex \
   && go env -w GO111MODULE=on \
   && go env -w GOPROXY=https://goproxy.cn,direct \
+  && go mod tidy \
   && go install -v . ./cmd/...
 
 VOLUME ["/root/.btcd"]

@@ -1,5 +1,5 @@
-github.com/BitTraceProject/BitTrace-Types v0.0.0-20221119114532-894788616b53 h1:Y/F72gqa2J/oGnSbk8KEZCIDwqrMM6w9ZMEji5v6fMM=
-github.com/BitTraceProject/BitTrace-Types v0.0.0-20221119114532-894788616b53/go.mod h1:maOPx2CKZUBkkuNow0eISgTN520pbTXK+SOveJibZN4=
+github.com/BitTraceProject/BitTrace-Types v0.0.0-20221122072417-6f0da6496ee1 h1:CIfGYB4tuwUuBKj0/fUf0wtN+WqpoDdA9mixwLqNC1Y=
+github.com/BitTraceProject/BitTrace-Types v0.0.0-20221122072417-6f0da6496ee1/go.mod h1:maOPx2CKZUBkkuNow0eISgTN520pbTXK+SOveJibZN4=
 github.com/aead/siphash v1.0.1 h1:FwHfE/T45KPKYuuSAKyyvE+oPWcaQ+CUmFW0bPlM+kg=
 github.com/aead/siphash v1.0.1/go.mod h1:Nywa3cDsYNNK3gaciGTWPwHt0wlpNV15vwmswBAUSII=
 github.com/btcsuite/btcd v0.23.0/go.mod h1:0QJIIN1wwIXF/3G/m87gIwGniDMDQqjVn4SZgnFpsYY=

@@ -15,4 +15,4 @@ function clean() {
   echo "rm -rf ${pwd}/peers/${CONTAINER_NAME}"
 }
 
-clean
+clean $1

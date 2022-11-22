@@ -12,14 +12,15 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/btcsuite/btcd/bittrace"
 	"github.com/btcsuite/btcd/blockchain"
+	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/database"
 	"github.com/btcsuite/btcd/mempool"
 	peerpkg "github.com/btcsuite/btcd/peer"
 	"github.com/btcsuite/btcd/wire"
-	"github.com/btcsuite/btcd/btcutil"
 )
 
 const (
@@ -650,8 +651,9 @@ func (sm *SyncManager) current() bool {
 	return true
 }
 
+// ZJH receive block
 // handleBlockMsg handles block messages from all peers.
-func (sm *SyncManager) handleBlockMsg(bmsg *blockMsg) {
+func (sm *SyncManager) handleBlockMsg(bmsg *blockMsg, traceData *bittrace.TraceData) {
 	peer := bmsg.peer
 	state, exists := sm.peerStates[peer]
 	if !exists {
@@ -707,7 +709,7 @@ func (sm *SyncManager) handleBlockMsg(bmsg *blockMsg) {
 
 	// Process the block to include validation, best chain selection, orphan
 	// handling, etc.
-	_, isOrphan, err := sm.chain.ProcessBlock(bmsg.block, behaviorFlags)
+	_, isOrphan, err := sm.chain.ProcessBlock(bmsg.block, behaviorFlags, traceData)
 	if err != nil {
 		// When the error is a rule error, it means the block was simply
 		// rejected as opposed to something actually going wrong, so log
@@ -1313,6 +1315,7 @@ out:
 	for {
 		select {
 		case m := <-sm.msgChan:
+			var traceData = bittrace.NewTraceData()
 			switch msg := m.(type) {
 			case *newPeerMsg:
 				sm.handleNewPeerMsg(msg.peer)
@@ -1322,7 +1325,7 @@ out:
 				msg.reply <- struct{}{}
 
 			case *blockMsg:
-				sm.handleBlockMsg(msg)
+				sm.handleBlockMsg(msg, traceData)
 				msg.reply <- struct{}{}
 
 			case *invMsg:
@@ -1346,7 +1349,7 @@ out:
 
 			case processBlockMsg:
 				_, isOrphan, err := sm.chain.ProcessBlock(
-					msg.block, msg.flags)
+					msg.block, msg.flags, traceData)
 				if err != nil {
 					msg.reply <- processBlockResponse{
 						isOrphan: false,
@@ -1370,7 +1373,10 @@ out:
 				log.Warnf("Invalid message type in block "+
 					"handler: %T", msg)
 			}
+			finalSnapshot := bittrace.FinalSnapshot(traceData.CurrentInitSnapshot().ID, time.Now(), bittrace.GetFinalStatus())
+			traceData.SetFinalSnapshot(&finalSnapshot)
 
+			bittrace.Info("final trace data:[%+v]", traceData)
 		case <-stallTicker.C:
 			sm.handleStallSample()
 

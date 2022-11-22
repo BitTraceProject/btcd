@@ -6,11 +6,14 @@ package blockchain
 
 import (
 	"fmt"
+	"github.com/BitTraceProject/BitTrace-Types/pkg/structure"
+	"github.com/btcsuite/btcd/bittrace"
 
-	"github.com/btcsuite/btcd/database"
 	"github.com/btcsuite/btcd/btcutil"
+	"github.com/btcsuite/btcd/database"
 )
 
+// ZJH chain verify
 // maybeAcceptBlock potentially accepts a block into the block chain and, if
 // accepted, returns whether or not it is on the main chain.  It performs
 // several validation checks which depend on its position within the block chain
@@ -21,7 +24,7 @@ import (
 // their documentation for how the flags modify their behavior.
 //
 // This function MUST be called with the chain state lock held (for writes).
-func (b *BlockChain) maybeAcceptBlock(block *btcutil.Block, flags BehaviorFlags) (bool, error) {
+func (b *BlockChain) maybeAcceptBlock(block *btcutil.Block, flags BehaviorFlags, traceData *bittrace.TraceData) (bool, error) {
 	// The height of this block is one more than the referenced previous
 	// block.
 	prevHash := &block.MsgBlock().Header.PrevBlock
@@ -76,7 +79,7 @@ func (b *BlockChain) maybeAcceptBlock(block *btcutil.Block, flags BehaviorFlags)
 	// Connect the passed block to the chain while respecting proper chain
 	// selection according to the chain with the most proof of work.  This
 	// also handles validation of the transaction scripts.
-	isMainChain, err := b.connectBestChain(newNode, block, flags)
+	isMainChain, err := b.connectBestChain(newNode, block, flags, traceData)
 	if err != nil {
 		return false, err
 	}
@@ -87,6 +90,11 @@ func (b *BlockChain) maybeAcceptBlock(block *btcutil.Block, flags BehaviorFlags)
 	b.chainLock.Unlock()
 	b.sendNotification(NTBlockAccepted, block)
 	b.chainLock.Lock()
+
+	{
+		chainVerifyRevision := structure.NewRevision(structure.FromString("revision_chain_verify"), traceData.CurrentInitSnapshot().ID)
+		traceData.AddRevision(chainVerifyRevision)
+	}
 
 	return isMainChain, nil
 }

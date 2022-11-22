@@ -6,6 +6,9 @@ package blockchain
 
 import (
 	"sync"
+	
+	"github.com/BitTraceProject/BitTrace-Types/pkg/structure"
+	"github.com/btcsuite/btcd/bittrace"
 )
 
 // approxNodesPerWeek is an approximation of the number of new blocks there are
@@ -36,11 +39,13 @@ func fastLog2Floor(n uint32) uint8 {
 // for comparing chains.
 //
 // For example, assume a block chain with a side chain as depicted below:
-//   genesis -> 1 -> 2 -> 3 -> 4  -> 5 ->  6  -> 7  -> 8
-//                         \-> 4a -> 5a -> 6a
+//
+//	genesis -> 1 -> 2 -> 3 -> 4  -> 5 ->  6  -> 7  -> 8
+//	                      \-> 4a -> 5a -> 6a
 //
 // The chain view for the branch ending in 6a consists of:
-//   genesis -> 1 -> 2 -> 3 -> 4a -> 5a -> 6a
+//
+//	genesis -> 1 -> 2 -> 3 -> 4a -> 5a -> 6a
 type chainView struct {
 	mtx   sync.Mutex
 	nodes []*blockNode
@@ -258,12 +263,14 @@ func (c *chainView) next(node *blockNode) *blockNode {
 // view.
 //
 // For example, assume a block chain with a side chain as depicted below:
-//   genesis -> 1 -> 2 -> 3 -> 4  -> 5 ->  6  -> 7  -> 8
-//                         \-> 4a -> 5a -> 6a
+//
+//	genesis -> 1 -> 2 -> 3 -> 4  -> 5 ->  6  -> 7  -> 8
+//	                      \-> 4a -> 5a -> 6a
 //
 // Further, assume the view is for the longer chain depicted above.  That is to
 // say it consists of:
-//   genesis -> 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
+//
+//	genesis -> 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 //
 // Invoking this function with block node 5 would return block node 6 while
 // invoking it with block node 5a would return nil since that node is not part
@@ -317,26 +324,34 @@ func (c *chainView) findFork(node *blockNode) *blockNode {
 	return node
 }
 
+// ZJH side extend
 // FindFork returns the final common block between the provided node and the
 // the chain view.  It will return nil if there is no common block.
 //
 // For example, assume a block chain with a side chain as depicted below:
-//   genesis -> 1 -> 2 -> ... -> 5 -> 6  -> 7  -> 8
-//                                \-> 6a -> 7a
+//
+//	genesis -> 1 -> 2 -> ... -> 5 -> 6  -> 7  -> 8
+//	                             \-> 6a -> 7a
 //
 // Further, assume the view is for the longer chain depicted above.  That is to
 // say it consists of:
-//   genesis -> 1 -> 2 -> ... -> 5 -> 6 -> 7 -> 8.
+//
+//	genesis -> 1 -> 2 -> ... -> 5 -> 6 -> 7 -> 8.
 //
 // Invoking this function with block node 7a would return block node 5 while
 // invoking it with block node 7 would return itself since it is already part of
 // the branch formed by the view.
 //
 // This function is safe for concurrent access.
-func (c *chainView) FindFork(node *blockNode) *blockNode {
+func (c *chainView) FindFork(node *blockNode, traceData *bittrace.TraceData) *blockNode {
 	c.mtx.Lock()
 	fork := c.findFork(node)
 	c.mtx.Unlock()
+
+	{
+		sidechainExtendRevision := structure.NewRevision(structure.FromString("revision_sidechain_extend"), traceData.CurrentInitSnapshot().ID)
+		traceData.AddRevision(sidechainExtendRevision)
+	}
 	return fork
 }
 

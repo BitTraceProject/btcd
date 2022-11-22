@@ -1,3 +1,8 @@
+btcd for BitTrace
+====
+
+BitTrace 在 btcd v0.23.3 版本基础上，定制完成代码的插桩，并提供了 btcd 批量部署相关的脚本资源：[deploy](./deploy/)
+
 btcd
 ====
 

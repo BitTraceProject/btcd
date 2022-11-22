@@ -651,7 +651,6 @@ func (sm *SyncManager) current() bool {
 	return true
 }
 
-// ZJH receive block
 // handleBlockMsg handles block messages from all peers.
 func (sm *SyncManager) handleBlockMsg(bmsg *blockMsg, traceData *bittrace.TraceData) {
 	peer := bmsg.peer
@@ -1301,6 +1300,7 @@ func (sm *SyncManager) handleInvMsg(imsg *invMsg) {
 	}
 }
 
+// ZJH receive block
 // blockHandler is the main handler for the sync manager.  It must be run as a
 // goroutine.  It processes block and inv messages in a separate goroutine
 // from the peer handlers so the block (MsgBlock) messages are handled by a

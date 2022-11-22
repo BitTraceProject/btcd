@@ -42,17 +42,17 @@ import "log"
 //}
 
 func Info(format string, msg ...interface{}) {
-	log.Println(format, msg)
+	log.Printf(format, msg)
 }
 
 func Warn(format string, msg ...interface{}) {
-	log.Println(format, msg)
+	log.Printf(format, msg)
 }
 
 func Error(format string, msg ...interface{}) {
-	log.Println(format, msg)
+	log.Printf(format, msg)
 }
 
 func Fatal(format string, msg ...interface{}) {
-	log.Println(format, msg)
+	log.Printf(format, msg)
 }

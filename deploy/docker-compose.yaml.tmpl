@@ -18,7 +18,7 @@ services:
       - BITTRACE_LOG_DIR:/root/${BITTRACE_LOG_DIR:-.bittrace/logfiles/}
       - BITTRACE_CONFIG_DIR:/root/${BITTRACE_CONFIG_DIR:-.bittrace/configs/}
       - BITTRACE_EXPORTER_CONFIG_NAME:/root/${BITTRACE_EXPORTER_CONFIG_NAME:-.bittrace/configs/exporter_config.yaml}
-    working_dir: /bittrace/
+    working_dir: /bittrace
     restart: unless-stopped
     logging:
       driver: "json-file"

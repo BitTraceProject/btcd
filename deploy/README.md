@@ -18,8 +18,8 @@ nano tmpl/.env.tmpl
 ## modify `btcd.conf.tmpl` with the help of comments
 
 ```shell
-cp example/btcd.config.example tmpl/btcd.config.tmpl
-nano tmpl/btcd.config.tmpl
+cp example/btcd.conf.example tmpl/btcd.conf.tmpl
+nano tmpl/btcd.conf.tmpl
 ```
 
 ## run bootstrap.sh

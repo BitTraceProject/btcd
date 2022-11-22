@@ -59,8 +59,8 @@ To use the following examples create an empty directory. In this directory creat
 ```bash
 mkdir ~/btcd-docker
 cd ~/btcd-docker
-touch docker-compose.yaml
-nano docker-compose.yaml (use your favourite editor to edit the compose file)
+touch docker-compose.yaml.tmpl
+nano docker-compose.yaml.tmpl (use your favourite editor to edit the compose file)
 docker-compose up (creates and starts a new btcd container)
 ```
 

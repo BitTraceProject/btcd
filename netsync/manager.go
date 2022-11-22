@@ -1328,6 +1328,12 @@ out:
 				sm.handleBlockMsg(msg, traceData)
 				msg.reply <- struct{}{}
 
+				{
+					finalSnapshot := bittrace.FinalSnapshot(traceData.CurrentInitSnapshot().ID, time.Now(), bittrace.GetFinalStatus())
+					traceData.SetFinalSnapshot(&finalSnapshot)
+
+					bittrace.Info("final trace data:[%+v]", traceData)
+				}
 			case *invMsg:
 				sm.handleInvMsg(msg)
 
@@ -1357,11 +1363,17 @@ out:
 					}
 				}
 
+				{
+					finalSnapshot := bittrace.FinalSnapshot(traceData.CurrentInitSnapshot().ID, time.Now(), bittrace.GetFinalStatus())
+					traceData.SetFinalSnapshot(&finalSnapshot)
+
+					bittrace.Info("final trace data:[%+v]", traceData)
+				}
+
 				msg.reply <- processBlockResponse{
 					isOrphan: isOrphan,
 					err:      nil,
 				}
-
 			case isCurrentMsg:
 				msg.reply <- sm.current()
 
@@ -1373,10 +1385,6 @@ out:
 				log.Warnf("Invalid message type in block "+
 					"handler: %T", msg)
 			}
-			finalSnapshot := bittrace.FinalSnapshot(traceData.CurrentInitSnapshot().ID, time.Now(), bittrace.GetFinalStatus())
-			traceData.SetFinalSnapshot(&finalSnapshot)
-
-			bittrace.Info("final trace data:[%+v]", traceData)
 		case <-stallTicker.C:
 			sm.handleStallSample()
 

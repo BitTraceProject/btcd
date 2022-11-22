@@ -21,8 +21,9 @@ var (
 	finalStatus structure.Status
 )
 
-// TODO 这里初始化需要弄
+// TODO 这里初始化需要弄，初始化状态，初始化链 id 等等
 func init() {
+	snapshotMap = map[string]structure.Snapshot{}
 	finalStatus = structure.NewStatus(nil, nil)
 }
 

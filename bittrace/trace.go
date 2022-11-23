@@ -94,17 +94,15 @@ func (data *TraceData) CurrentFinalSnapshot() *structure.Snapshot {
 	return data.finalSnapshot
 }
 
-//func (data *TraceData) CommitRevision(revision *structure.Revision, context string, commitTime time.Time) error {
-//	commitData, err := revision.Commit(context, commitTime)
-//	if err != nil {
-//		return err
-//	}
-//	data.revisionList = append(data.revisionList, commitData)
-//	return nil
-//}
-
-func (data *TraceData) CommitRevision(revision *structure.Revision) {
+func (data *TraceData) CommitRevision(revision *structure.Revision, context string, commitTime time.Time) error {
+	//commitData, err := revision.Commit(context, commitTime)
+	_, err := revision.Commit(context, commitTime)
+	if err != nil {
+		return err
+	}
+	//data.revisionList = append(data.revisionList, commitData)
 	data.revisionList = append(data.revisionList, revision)
+	return nil
 }
 
 func (data *TraceData) LastRevision() *structure.Revision {

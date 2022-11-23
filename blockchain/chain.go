@@ -329,7 +329,9 @@ func (b *BlockChain) addOrphanBlock(block *btcutil.Block, traceData *bittrace.Tr
 	prevHash := &block.MsgBlock().Header.PrevBlock
 	b.prevOrphans[*prevHash] = append(b.prevOrphans[*prevHash], oBlock)
 
-	traceData.CommitRevision(orphanExtendRevision)
+	if err := traceData.CommitRevision(orphanExtendRevision, fmt.Sprintf("prevOrphanNum=%d", len(b.prevOrphans[*prevHash])), time.Now()); err != nil {
+		bittrace.Error("%v", err)
+	}
 }
 
 // SequenceLock represents the converted relative lock-time in seconds, and
@@ -576,6 +578,7 @@ func (b *BlockChain) connectBlock(node *blockNode, block *btcutil.Block,
 
 	// Sanity check the correct number of stxos are provided.
 	if len(stxos) != countSpentOutputs(block) {
+		// TODO 像这样的可能都需要更新 revision commit，再讨论一下，暂时先这样，可能和 event result op 这些一起搞
 		return AssertError("connectBlock called with inconsistent " +
 			"spent transaction out information")
 	}
@@ -675,8 +678,9 @@ func (b *BlockChain) connectBlock(node *blockNode, block *btcutil.Block,
 	b.sendNotification(NTBlockConnected, block)
 	b.chainLock.Lock()
 
-	traceData.CommitRevision(mainchainExtendRevision)
-
+	if err := traceData.CommitRevision(mainchainExtendRevision, fmt.Sprintf("chainHeight=%d;diffBits=%d", b.bestChain.Tip().height, b.bestChain.Tip().bits), time.Now()); err != nil {
+		bittrace.Error("%v", err)
+	}
 	return nil
 }
 
@@ -1068,8 +1072,9 @@ func (b *BlockChain) reorganizeChain(detachNodes, attachNodes *list.List, traceD
 	log.Infof("REORGANIZE: New best chain head is %v (height %v)",
 		newBest.hash, newBest.height)
 
-	traceData.CommitRevision(chainSwapRevision)
-
+	if err := traceData.CommitRevision(chainSwapRevision, fmt.Sprintf("oldBestHeight=%d;newBestHeight=%d", oldBest.height, newBest.height), time.Now()); err != nil {
+		bittrace.Error("%v", err)
+	}
 	return nil
 }
 
@@ -1193,13 +1198,17 @@ func (b *BlockChain) connectBestChain(node *blockNode, block *btcutil.Block, fla
 				node.hash, fork.height, fork.hash)
 
 			// TODO 这里的 context 是 new side chain
-			traceData.CommitRevision(sidechainExtendRevision)
+			if err := traceData.CommitRevision(sidechainExtendRevision, fmt.Sprintf("sidechainNewHeight=%d", fork.height), time.Now()); err != nil {
+				bittrace.Error("%v", err)
+			}
 		} else {
 			log.Infof("EXTEND FORK: Block %v extends a side chain "+
 				"which forks the chain at height %d/block %v",
 				node.hash, fork.height, fork.hash)
 			// TODO 这里的 context 是 extend side chain
-			traceData.CommitRevision(sidechainExtendRevision)
+			if err := traceData.CommitRevision(sidechainExtendRevision, fmt.Sprintf("sidechainExtendHeight=%d", fork.height), time.Now()); err != nil {
+				bittrace.Error("%v", err)
+			}
 		}
 
 		return false, nil

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/BitTraceProject/BitTrace-Types/pkg/structure"
 	"github.com/btcsuite/btcd/bittrace"
+	"time"
 
 	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/database"
@@ -46,10 +47,17 @@ func (b *BlockChain) maybeAcceptBlock(block *btcutil.Block, flags BehaviorFlags,
 	// position of the block within the block chain.
 	err := b.checkBlockContext(block, prevNode, flags)
 	if err != nil {
+
+		if err := traceData.CommitRevision(chainVerifyRevision, "chain_verify_failed checkBlockContext failed", time.Now()); err != nil {
+			bittrace.Error("%v", err)
+		}
+
 		return false, err
 	}
 
-	traceData.CommitRevision(chainVerifyRevision)
+	if err := traceData.CommitRevision(chainVerifyRevision, "chain_verify_success", time.Now()); err != nil {
+		bittrace.Error("%v", err)
+	}
 
 	// Insert the block into the database if it's not already there.  Even
 	// though it is possible the block will ultimately fail to connect, it

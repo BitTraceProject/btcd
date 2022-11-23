@@ -85,7 +85,7 @@ func (data *TraceData) SetFinalSnapshot(snapshot *structure.Snapshot) {
 	//	Info("snapshot revision:[%s]", string(revision))
 	//}
 	for _, revision := range data.revisionList {
-		Info("snapshot revision:[%+v]", revision)
+		Info("snapshot revision:[%+v]", *revision)
 	}
 	Info("got a final snapshot:[%+v]", *snapshot)
 }

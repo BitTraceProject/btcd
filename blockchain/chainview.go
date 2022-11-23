@@ -6,9 +6,6 @@ package blockchain
 
 import (
 	"sync"
-	
-	"github.com/BitTraceProject/BitTrace-Types/pkg/structure"
-	"github.com/btcsuite/btcd/bittrace"
 )
 
 // approxNodesPerWeek is an approximation of the number of new blocks there are
@@ -324,7 +321,6 @@ func (c *chainView) findFork(node *blockNode) *blockNode {
 	return node
 }
 
-// ZJH side extend
 // FindFork returns the final common block between the provided node and the
 // the chain view.  It will return nil if there is no common block.
 //
@@ -343,15 +339,10 @@ func (c *chainView) findFork(node *blockNode) *blockNode {
 // the branch formed by the view.
 //
 // This function is safe for concurrent access.
-func (c *chainView) FindFork(node *blockNode, traceData *bittrace.TraceData) *blockNode {
+func (c *chainView) FindFork(node *blockNode) *blockNode {
 	c.mtx.Lock()
 	fork := c.findFork(node)
 	c.mtx.Unlock()
-
-	{
-		sidechainExtendRevision := structure.NewRevision(structure.FromString("revision_sidechain_extend"), traceData.CurrentInitSnapshot().ID)
-		traceData.AddRevision(sidechainExtendRevision)
-	}
 	return fork
 }
 

@@ -25,6 +25,8 @@ import (
 //
 // This function MUST be called with the chain state lock held (for writes).
 func (b *BlockChain) maybeAcceptBlock(block *btcutil.Block, flags BehaviorFlags, traceData *bittrace.TraceData) (bool, error) {
+	var chainVerifyRevision = structure.NewRevision(structure.FromString("revision_chain_verify"), traceData.CurrentInitSnapshot().ID)
+
 	// The height of this block is one more than the referenced previous
 	// block.
 	prevHash := &block.MsgBlock().Header.PrevBlock
@@ -46,6 +48,8 @@ func (b *BlockChain) maybeAcceptBlock(block *btcutil.Block, flags BehaviorFlags,
 	if err != nil {
 		return false, err
 	}
+
+	traceData.CommitRevision(chainVerifyRevision)
 
 	// Insert the block into the database if it's not already there.  Even
 	// though it is possible the block will ultimately fail to connect, it
@@ -90,11 +94,6 @@ func (b *BlockChain) maybeAcceptBlock(block *btcutil.Block, flags BehaviorFlags,
 	b.chainLock.Unlock()
 	b.sendNotification(NTBlockAccepted, block)
 	b.chainLock.Lock()
-
-	{
-		chainVerifyRevision := structure.NewRevision(structure.FromString("revision_chain_verify"), traceData.CurrentInitSnapshot().ID)
-		traceData.AddRevision(chainVerifyRevision)
-	}
 
 	return isMainChain, nil
 }

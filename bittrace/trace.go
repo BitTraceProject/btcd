@@ -10,7 +10,8 @@ import (
 type TraceData struct {
 	initSnapshot  *structure.Snapshot
 	finalSnapshot *structure.Snapshot
-	revisionList  []*structure.Revision
+	//revisionList  [][]byte
+	revisionList []*structure.Revision
 }
 
 var (
@@ -21,10 +22,9 @@ var (
 	finalStatus structure.Status
 )
 
-// TODO 这里初始化需要弄，初始化状态，初始化链 id 等等
+// TODO 这里初始化需要弄，初始化状态，初始化链 id 等等，在 client 启动的某个位置添加
 func init() {
 	snapshotMap = map[string]structure.Snapshot{}
-	finalStatus = structure.NewStatus(nil, nil)
 }
 
 func InitSnapshot(targetChainID string, targetChainHeight int32, initTime time.Time, initStatus structure.Status) structure.Snapshot {
@@ -45,6 +45,10 @@ func FinalSnapshot(snapshotID string, finalTime time.Time, finalStatus structure
 	return snapshot
 }
 
+func InitFinalStatus(status structure.Status) {
+	finalStatus = status
+}
+
 func GetFinalStatus() structure.Status {
 	fsMux.RLock()
 	defer fsMux.RUnlock()
@@ -60,6 +64,7 @@ func UpdateFinalStatus(status structure.Status) {
 func NewTraceData() *TraceData {
 	return &TraceData{
 		initSnapshot: nil,
+		//revisionList: [][]byte{},
 		revisionList: []*structure.Revision{},
 	}
 }
@@ -75,6 +80,13 @@ func (data *TraceData) CurrentInitSnapshot() *structure.Snapshot {
 
 func (data *TraceData) SetFinalSnapshot(snapshot *structure.Snapshot) {
 	data.finalSnapshot = snapshot
+	// TODO 为了调试方便，这里先输出原始
+	//for _, revision := range data.revisionList {
+	//	Info("snapshot revision:[%s]", string(revision))
+	//}
+	for _, revision := range data.revisionList {
+		Info("snapshot revision:[%+v]", revision)
+	}
 	Info("got a final snapshot:[%+v]", *snapshot)
 }
 
@@ -82,10 +94,17 @@ func (data *TraceData) CurrentFinalSnapshot() *structure.Snapshot {
 	return data.finalSnapshot
 }
 
-func (data *TraceData) AddRevision(revision *structure.Revision) {
+//func (data *TraceData) CommitRevision(revision *structure.Revision, context string, commitTime time.Time) error {
+//	commitData, err := revision.Commit(context, commitTime)
+//	if err != nil {
+//		return err
+//	}
+//	data.revisionList = append(data.revisionList, commitData)
+//	return nil
+//}
+
+func (data *TraceData) CommitRevision(revision *structure.Revision) {
 	data.revisionList = append(data.revisionList, revision)
-	Info("add a revision:[%+v]", *revision)
-	// TODO 这里评估下是否可以直接加到 snapshot，一次性输出完毕
 }
 
 func (data *TraceData) LastRevision() *structure.Revision {

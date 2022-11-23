@@ -84,6 +84,8 @@ func (b *BlockChain) blockExists(hash *chainhash.Hash) (bool, error) {
 //
 // This function MUST be called with the chain state lock held (for writes).
 func (b *BlockChain) processOrphans(hash *chainhash.Hash, flags BehaviorFlags, traceData *bittrace.TraceData) error {
+	var orphanProcessRevision = structure.NewRevision(structure.FromString("revision_orphan_process"), traceData.CurrentInitSnapshot().ID)
+
 	// Start with processing at least the passed hash.  Leave a little room
 	// for additional orphan blocks that need to be processed without
 	// needing to grow the array in the common case.
@@ -130,10 +132,7 @@ func (b *BlockChain) processOrphans(hash *chainhash.Hash, flags BehaviorFlags, t
 		}
 	}
 
-	{
-		orphanProcessRevision := structure.NewRevision(structure.FromString("revision_orphan_process"), traceData.CurrentInitSnapshot().ID)
-		traceData.AddRevision(orphanProcessRevision)
-	}
+	traceData.CommitRevision(orphanProcessRevision)
 
 	return nil
 }
@@ -156,8 +155,6 @@ func (b *BlockChain) ProcessBlock(block *btcutil.Block, flags BehaviorFlags, tra
 	{
 		// init snapshot
 		var (
-			// TODO 效率评估，不超过一定数量（6），可以直接回溯获取
-			// TODO 替代方案
 			forkHeight        int32 // 通过回溯 prevNode 找它
 			targetChainID     = structure.GenChainID(forkHeight)
 			targetChainHeight int32 // 通过回溯 prevNode 计算
@@ -171,27 +168,34 @@ func (b *BlockChain) ProcessBlock(block *btcutil.Block, flags BehaviorFlags, tra
 		prevNode := b.index.LookupNode(prevHash)
 
 		if prevNode.hash.IsEqual(&b.bestChain.Tip().hash) {
-			forkHeight = b.bestChain.findFork(prevNode).height
-
-			// TODO 复杂情况的单独处理
+			// 如果当前区块的前一个区块是 mainchain 的最优区块，则 forkHeight 直接赋值 0
+			forkHeight = 0
+			targetChainHeight = b.bestChain.Height() + 1
+		} else {
+			// 否则当前区块可能属于其他 sidechain，则 forkHeight 通过回溯计算
+			// TODO 其他复杂情况的单独处理，如 prevBlock 不存在，prevBlock 是已知但是无效的
 			if prevNode == nil {
 				//str := fmt.Sprintf("previous block %s is unknown", prevHash)
 				//return false, ruleError(ErrPreviousBlockUnknown, str)
 			} else if b.index.NodeStatus(prevNode).KnownInvalid() {
 				//str := fmt.Sprintf("previous block %s is known to be invalid", prevHash)
 				//return false, ruleError(ErrInvalidAncestorBlock, str)
+			} else {
+				b.bestChain.mtx.Lock()
+				forkHeight = b.bestChain.findFork(prevNode).height
+				b.bestChain.mtx.Unlock()
+
+				targetChainHeight = prevNode.height + 1
 			}
-			targetChainHeight = prevNode.height + 1
-		} else {
-			forkHeight = 0
-			targetChainHeight = b.bestChain.Height() + 1
 		}
 		initSnapshot := bittrace.InitSnapshot(targetChainID, targetChainHeight, initTime, initStatus)
 		traceData.SetInitSnapshot(&initSnapshot)
 
-		receiveBlockRevision := structure.NewRevision(structure.FromString("revision_receive_block"), initSnapshot.ID)
-		traceData.AddRevision(receiveBlockRevision)
+		var receiveBlockRevision = structure.NewRevision(structure.FromString("revision_receive_block"), initSnapshot.ID)
+		traceData.CommitRevision(receiveBlockRevision)
 	}
+
+	var blockVerifyRevision = structure.NewRevision(structure.FromString("revision_block_verify"), traceData.CurrentInitSnapshot().ID)
 
 	fastAdd := flags&BFFastAdd == BFFastAdd
 
@@ -260,10 +264,7 @@ func (b *BlockChain) ProcessBlock(block *btcutil.Block, flags BehaviorFlags, tra
 		}
 	}
 
-	{
-		blockVerifyRevision := structure.NewRevision(structure.FromString("revision_block_verify"), traceData.CurrentInitSnapshot().ID)
-		traceData.AddRevision(blockVerifyRevision)
-	}
+	traceData.CommitRevision(blockVerifyRevision)
 
 	// Handle orphan blocks.
 	prevHash := &blockHeader.PrevBlock

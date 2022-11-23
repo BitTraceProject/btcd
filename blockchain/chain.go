@@ -287,6 +287,8 @@ func (b *BlockChain) removeOrphanBlock(orphan *orphanBlock) {
 // blocks and will remove the oldest received orphan block if the limit is
 // exceeded.
 func (b *BlockChain) addOrphanBlock(block *btcutil.Block, traceData *bittrace.TraceData) {
+	var orphanExtendRevision = structure.NewRevision(structure.FromString("revision_orphan_extend"), traceData.CurrentInitSnapshot().ID)
+
 	// Remove expired orphan blocks.
 	for _, oBlock := range b.orphans {
 		if time.Now().After(oBlock.expiration) {
@@ -327,10 +329,7 @@ func (b *BlockChain) addOrphanBlock(block *btcutil.Block, traceData *bittrace.Tr
 	prevHash := &block.MsgBlock().Header.PrevBlock
 	b.prevOrphans[*prevHash] = append(b.prevOrphans[*prevHash], oBlock)
 
-	{
-		orphanExtendRevision := structure.NewRevision(structure.FromString("revision_orphan_extend"), traceData.CurrentInitSnapshot().ID)
-		traceData.AddRevision(orphanExtendRevision)
-	}
+	traceData.CommitRevision(orphanExtendRevision)
 }
 
 // SequenceLock represents the converted relative lock-time in seconds, and
@@ -504,7 +503,7 @@ func LockTimeToSequence(isSeconds bool, locktime uint32) uint32 {
 // This function may modify node statuses in the block index without flushing.
 //
 // This function MUST be called with the chain state lock held (for reads).
-func (b *BlockChain) getReorganizeNodes(node *blockNode, traceData *bittrace.TraceData) (*list.List, *list.List) {
+func (b *BlockChain) getReorganizeNodes(node *blockNode) (*list.List, *list.List) {
 	attachNodes := list.New()
 	detachNodes := list.New()
 
@@ -520,7 +519,7 @@ func (b *BlockChain) getReorganizeNodes(node *blockNode, traceData *bittrace.Tra
 	// to attach to the main tree.  Push them onto the list in reverse order
 	// so they are attached in the appropriate order when iterating the list
 	// later.
-	forkNode := b.bestChain.FindFork(node, traceData)
+	forkNode := b.bestChain.FindFork(node)
 	invalidChain := false
 	for n := node; n != nil && n != forkNode; n = n.parent {
 		if b.index.NodeStatus(n).KnownInvalid() {
@@ -566,6 +565,7 @@ func (b *BlockChain) getReorganizeNodes(node *blockNode, traceData *bittrace.Tra
 // This function MUST be called with the chain state lock held (for writes).
 func (b *BlockChain) connectBlock(node *blockNode, block *btcutil.Block,
 	view *UtxoViewpoint, stxos []SpentTxOut, traceData *bittrace.TraceData) error {
+	var mainchainExtendRevision = structure.NewRevision(structure.FromString("revision_mainchain_extend"), traceData.CurrentInitSnapshot().ID)
 
 	// Make sure it's extending the end of the best chain.
 	prevHash := &block.MsgBlock().Header.PrevBlock
@@ -675,10 +675,7 @@ func (b *BlockChain) connectBlock(node *blockNode, block *btcutil.Block,
 	b.sendNotification(NTBlockConnected, block)
 	b.chainLock.Lock()
 
-	{
-		mainchainExtendRevision := structure.NewRevision(structure.FromString("revision_mainchain_extend"), traceData.CurrentInitSnapshot().ID)
-		traceData.AddRevision(mainchainExtendRevision)
-	}
+	traceData.CommitRevision(mainchainExtendRevision)
 
 	return nil
 }
@@ -824,6 +821,8 @@ func countSpentOutputs(block *btcutil.Block) int {
 //
 // This function MUST be called with the chain state lock held (for writes).
 func (b *BlockChain) reorganizeChain(detachNodes, attachNodes *list.List, traceData *bittrace.TraceData) error {
+	var chainSwapRevision = structure.NewRevision(structure.FromString("revision_chain_swap"), traceData.CurrentInitSnapshot().ID)
+
 	// Nothing to do if no reorganize nodes were provided.
 	if detachNodes.Len() == 0 && attachNodes.Len() == 0 {
 		return nil
@@ -1069,10 +1068,7 @@ func (b *BlockChain) reorganizeChain(detachNodes, attachNodes *list.List, traceD
 	log.Infof("REORGANIZE: New best chain head is %v (height %v)",
 		newBest.hash, newBest.height)
 
-	{
-		chainSwapRevision := structure.NewRevision(structure.FromString("revision_chain_swap"), traceData.CurrentInitSnapshot().ID)
-		traceData.AddRevision(chainSwapRevision)
-	}
+	traceData.CommitRevision(chainSwapRevision)
 
 	return nil
 }
@@ -1151,6 +1147,7 @@ func (b *BlockChain) connectBestChain(node *blockNode, block *btcutil.Block, fla
 			}
 		}
 
+		// ZJH main chain extend
 		// Connect the block to the main chain.
 		err := b.connectBlock(node, block, view, stxos, traceData)
 		if err != nil {
@@ -1183,26 +1180,32 @@ func (b *BlockChain) connectBestChain(node *blockNode, block *btcutil.Block, fla
 			block.Hash())
 	}
 
+	// ZJH side chain extend
 	// We're extending (or creating) a side chain, but the cumulative
 	// work for this new side chain is not enough to make it the new chain.
 	if node.workSum.Cmp(b.bestChain.Tip().workSum) <= 0 {
+		var sidechainExtendRevision = structure.NewRevision(structure.FromString("revision_sidechain_extend"), traceData.CurrentInitSnapshot().ID)
 		// Log information about how the block is forking the chain.
-		fork := b.bestChain.FindFork(node, traceData)
+		fork := b.bestChain.FindFork(node)
 		if fork.hash.IsEqual(parentHash) {
 			log.Infof("FORK: Block %v forks the chain at height %d"+
 				"/block %v, but does not cause a reorganize",
 				node.hash, fork.height, fork.hash)
+
+			// TODO 没有新的 fork，也不会发生重组
 		} else {
 			log.Infof("EXTEND FORK: Block %v extends a side chain "+
 				"which forks the chain at height %d/block %v",
 				node.hash, fork.height, fork.hash)
+
 		}
+
+		traceData.CommitRevision(sidechainExtendRevision)
 
 		return false, nil
 	}
 
 	// ZJH chain swap
-	// TODO 一个 snapshot 里面出现多次重复的 Revision，如 findfork 会重复 processBlock
 	// We're extending (or creating) a side chain and the cumulative work
 	// for this new side chain is more than the old best chain, so this side
 	// chain needs to become the main chain.  In order to accomplish that,
@@ -1210,7 +1213,7 @@ func (b *BlockChain) connectBestChain(node *blockNode, block *btcutil.Block, fla
 	// blocks that form the (now) old fork from the main chain, and attach
 	// the blocks that form the new chain to the main chain starting at the
 	// common ancenstor (the point where the chain forked).
-	detachNodes, attachNodes := b.getReorganizeNodes(node, traceData)
+	detachNodes, attachNodes := b.getReorganizeNodes(node)
 
 	// Reorganize the chain.
 	log.Infof("REORGANIZE: Block %v is causing a reorganize.", node.hash)

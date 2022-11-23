@@ -1192,15 +1192,15 @@ func (b *BlockChain) connectBestChain(node *blockNode, block *btcutil.Block, fla
 				"/block %v, but does not cause a reorganize",
 				node.hash, fork.height, fork.hash)
 
-			// TODO 没有新的 fork，也不会发生重组
+			// TODO 这里的 context 是 new side chain
+			traceData.CommitRevision(sidechainExtendRevision)
 		} else {
 			log.Infof("EXTEND FORK: Block %v extends a side chain "+
 				"which forks the chain at height %d/block %v",
 				node.hash, fork.height, fork.hash)
-
+			// TODO 这里的 context 是 extend side chain
+			traceData.CommitRevision(sidechainExtendRevision)
 		}
-
-		traceData.CommitRevision(sidechainExtendRevision)
 
 		return false, nil
 	}

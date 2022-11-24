@@ -6,6 +6,8 @@ peer_dir=${pwd}/peers
 tmpl_dir=${pwd}/tmpl
 temp_dir=${pwd}/.temp
 
+source ./clean.sh
+
 function precheck() {
   if [ ! -f "${tmpl_dir}/.env.tmpl" ]; then
     exitWithError ".env tmpl not prepare"
@@ -34,19 +36,6 @@ function prepare() {
 function bootstrap() {
   infoln "up peer container"
   docker-compose up -d
-}
-
-function clean() {
-    pwd=${HOME}/.bittrace
-    peer_dir=${pwd}/peers
-    CONTAINER_NAME=$1
-    source ${peer_dir}/${CONTAINER_NAME}/.env
-    docker stop ${CONTAINER_NAME}
-    echo "stop ${CONTAINER_NAME}"
-    docker rm ${CONTAINER_NAME}
-    echo "rm ${CONTAINER_NAME}"
-    sudo rm -rf ${peer_dir}/${CONTAINER_NAME}
-    echo "rm -rf ${peer_dir}/${CONTAINER_NAME}"
 }
 
 function exitWithError() {

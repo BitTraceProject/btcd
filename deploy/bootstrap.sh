@@ -1,12 +1,11 @@
 #!/bin/bash
 
 subnet_name=peer_btcd_network
+deploy_root=$PWD
 pwd=${HOME}/.bittrace
 peer_dir=${pwd}/peers
 tmpl_dir=${pwd}/tmpl
 temp_dir=${pwd}/.temp
-
-source ./clean.sh
 
 function precheck() {
   if [ ! -f "${tmpl_dir}/.env.tmpl" ]; then
@@ -88,8 +87,7 @@ function exitWithError() {
     infoln "clean temp files"
     sudo rm -rf "${pwd}"/"${temp_dir}"/
   fi
-  clean ${CONTAINER_NAME}
-
+  ${deploy_root}/clean.sh ${CONTAINER_NAME}
   exit 0
 }
 

@@ -10,9 +10,9 @@ function clean() {
   echo "stop ${CONTAINER_NAME}"
   docker rm ${CONTAINER_NAME}
   echo "rm ${CONTAINER_NAME}"
-  sudo rm -rf ${peer_pwd/${CONTAINER_NAME}
+  sudo rm -rf ${peer_pwd}/${CONTAINER_NAME}
   echo "rm -rf ${peer_pwd}/${CONTAINER_NAME}"
 
 }}
 
-clean
+clean $1

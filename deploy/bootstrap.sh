@@ -36,6 +36,32 @@ function bootstrap() {
   docker-compose up -d
 }
 
+function clean() {
+    pwd=${HOME}/.bittrace
+    peer_dir=${pwd}/peers
+    CONTAINER_NAME=$1
+    source ${peer_dir}/${CONTAINER_NAME}/.env
+    docker stop ${CONTAINER_NAME}
+    echo "stop ${CONTAINER_NAME}"
+    docker rm ${CONTAINER_NAME}
+    echo "rm ${CONTAINER_NAME}"
+    sudo rm -rf ${peer_dir}/${CONTAINER_NAME}
+    echo "rm -rf ${peer_dir}/${CONTAINER_NAME}"
+}
+
+function exitWithError() {
+  errorMsg=$1
+  if [ -n "${errorMsg}" ]; then
+    errorln "${errorMsg}"
+  fi
+  if [ -d "${temp_dir}" ]; then
+    infoln "clean temp files"
+    sudo rm -rf "${pwd}"/"${temp_dir}"/
+  fi
+  clean ${CONTAINER_NAME}
+  exit 0
+}
+
 function main() {
   set -x
   infoln "precheck process"
@@ -75,20 +101,6 @@ function infoln() {
 
 function errorln() {
     echo "===[error]: ${1}"
-}
-
-function exitWithError() {
-  errorMsg=$1
-  if [ -n "${errorMsg}" ]; then
-    errorln "${errorMsg}"
-  fi
-  if [ -d "${temp_dir}" ]; then
-    infoln "clean temp files"
-    sudo rm -rf "${pwd}"/"${temp_dir}"/
-  fi
-  source ./clean.sh
-  clean ${CONTAINER_NAME}
-  exit 0
 }
 
 main

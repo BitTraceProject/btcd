@@ -14,4 +14,4 @@ function clean() {
   echo "rm -rf ${peer_pwd}/${CONTAINER_NAME}"
 }
 
-clean $1
+clean $CONTAINER_NAME

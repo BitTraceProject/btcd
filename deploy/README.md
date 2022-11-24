@@ -31,9 +31,3 @@ nano ${tmpl_dir}/tmpl/btcd.conf.tmpl
 ```shell
 bash bootstrap.sh
 ```
-
-## run clean.sh when finish
-
-```shell
-bash clean.sh <CONTAINER_NAME you want to clean>
-```

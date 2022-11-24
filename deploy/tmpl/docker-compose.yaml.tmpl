@@ -7,8 +7,8 @@ networks:
     external: true
 services:
   peer_btcd:
-    container_name: ${CONTAINER_NAME:-peer_btcd-0.net-0.testnet}
-    hostname: ${HOSTNAME:-peer_btcd-0.net-0.testnet}
+    container_name: ${CONTAINER_NAME:-peer0.btcd.testnet0}
+    hostname: ${HOSTNAME:-peer0.btcd.testnet0}
     image: ${IMAGE:-bittrace/peer_btcd:latest}
     labels:
       service: peer_btcd_service

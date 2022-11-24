@@ -1,7 +1,7 @@
 #!/bin/bash
 
 subnet_name=peer_btcd_network
-proj_root=$PWD
+deploy_root=$PWD
 pwd=${HOME}/.bittrace
 peer_dir=${pwd}/peers
 tmpl_dir=${pwd}/tmpl
@@ -33,7 +33,6 @@ function prepare() {
 }
 
 function bootstrap() {
-  cd "${peer_dir}/${CONTAINER_NAME}"
   infoln "create network if not exist"
   docker network create --driver=bridge --subnet="${SUBNET_CIDR}" "${subnet_name}"
   infoln "up peer container"
@@ -82,7 +81,6 @@ function errorln() {
 }
 
 function exitWithError() {
-  cd $proj_root
   errorMsg=$1
   if [ -n "${errorMsg}" ]; then
     errorln "${errorMsg}"
@@ -91,7 +89,7 @@ function exitWithError() {
     infoln "clean temp files"
     sudo rm -rf "${pwd}"/"${temp_dir}"/
   fi
-  bash clean.sh ${CONTAINER_NAME}
+  bash $deploy_root/clean.sh ${CONTAINER_NAME}
   exit 0
 }
 

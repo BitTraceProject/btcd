@@ -10,7 +10,6 @@ networks:
       driver: default
       config:
         - subnet: ${SUBNET_CIDR:-172.16.0.0/24}
-        - gateway: ${SUBNET_GATEWAY:-172.16.0.1}
 
 services:
   peer_btcd:

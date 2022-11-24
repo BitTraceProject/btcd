@@ -33,8 +33,6 @@ function prepare() {
 }
 
 function bootstrap() {
-  infoln "create network if not exist"
-  docker network create --driver=bridge --subnet="${SUBNET_CIDR}" "${subnet_name}"
   infoln "up peer container"
   docker-compose up -d
 }

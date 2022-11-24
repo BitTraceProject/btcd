@@ -1329,10 +1329,10 @@ out:
 				msg.reply <- struct{}{}
 
 				{
-					finalSnapshot := bittrace.FinalSnapshot(traceData.CurrentInitSnapshot().ID, time.Now(), bittrace.GetFinalStatus())
-					traceData.SetFinalSnapshot(&finalSnapshot)
-
-					bittrace.Info("final trace data:[%+v]", *traceData)
+					finalSnapshot := bittrace.FinalSnapshot(traceData.Snapshot.ID, time.Now(), bittrace.GetFinalStatus())
+					if err := traceData.SetFinalSnapshot(&finalSnapshot); err != nil {
+						bittrace.Error("%v", err)
+					}
 				}
 			case *invMsg:
 				sm.handleInvMsg(msg)
@@ -1364,10 +1364,10 @@ out:
 				}
 
 				{
-					finalSnapshot := bittrace.FinalSnapshot(traceData.CurrentInitSnapshot().ID, time.Now(), bittrace.GetFinalStatus())
-					traceData.SetFinalSnapshot(&finalSnapshot)
-
-					bittrace.Info("final trace data:[%+v]", *traceData)
+					finalSnapshot := bittrace.FinalSnapshot(traceData.Snapshot.ID, time.Now(), bittrace.GetFinalStatus())
+					if err := traceData.SetFinalSnapshot(&finalSnapshot); err != nil {
+						bittrace.Error("%v", err)
+					}
 				}
 
 				msg.reply <- processBlockResponse{

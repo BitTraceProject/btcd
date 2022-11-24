@@ -287,7 +287,7 @@ func (b *BlockChain) removeOrphanBlock(orphan *orphanBlock) {
 // blocks and will remove the oldest received orphan block if the limit is
 // exceeded.
 func (b *BlockChain) addOrphanBlock(block *btcutil.Block, traceData *bittrace.TraceData) {
-	var orphanExtendRevision = structure.NewRevision(structure.FromString("revision_orphan_extend"), traceData.CurrentInitSnapshot().ID)
+	var orphanExtendRevision = structure.NewRevision(structure.FromString("revision_orphan_extend"), traceData.Snapshot.ID)
 
 	// Remove expired orphan blocks.
 	for _, oBlock := range b.orphans {
@@ -567,7 +567,7 @@ func (b *BlockChain) getReorganizeNodes(node *blockNode) (*list.List, *list.List
 // This function MUST be called with the chain state lock held (for writes).
 func (b *BlockChain) connectBlock(node *blockNode, block *btcutil.Block,
 	view *UtxoViewpoint, stxos []SpentTxOut, traceData *bittrace.TraceData) error {
-	var mainchainExtendRevision = structure.NewRevision(structure.FromString("revision_mainchain_extend"), traceData.CurrentInitSnapshot().ID)
+	var mainchainExtendRevision = structure.NewRevision(structure.FromString("revision_mainchain_extend"), traceData.Snapshot.ID)
 
 	// Make sure it's extending the end of the best chain.
 	prevHash := &block.MsgBlock().Header.PrevBlock
@@ -825,7 +825,7 @@ func countSpentOutputs(block *btcutil.Block) int {
 //
 // This function MUST be called with the chain state lock held (for writes).
 func (b *BlockChain) reorganizeChain(detachNodes, attachNodes *list.List, traceData *bittrace.TraceData) error {
-	var chainSwapRevision = structure.NewRevision(structure.FromString("revision_chain_swap"), traceData.CurrentInitSnapshot().ID)
+	var chainSwapRevision = structure.NewRevision(structure.FromString("revision_chain_swap"), traceData.Snapshot.ID)
 
 	// Nothing to do if no reorganize nodes were provided.
 	if detachNodes.Len() == 0 && attachNodes.Len() == 0 {
@@ -1189,7 +1189,7 @@ func (b *BlockChain) connectBestChain(node *blockNode, block *btcutil.Block, fla
 	// We're extending (or creating) a side chain, but the cumulative
 	// work for this new side chain is not enough to make it the new chain.
 	if node.workSum.Cmp(b.bestChain.Tip().workSum) <= 0 {
-		var sidechainExtendRevision = structure.NewRevision(structure.FromString("revision_sidechain_extend"), traceData.CurrentInitSnapshot().ID)
+		var sidechainExtendRevision = structure.NewRevision(structure.FromString("revision_sidechain_extend"), traceData.Snapshot.ID)
 		// Log information about how the block is forking the chain.
 		fork := b.bestChain.FindFork(node)
 		if fork.hash.IsEqual(parentHash) {

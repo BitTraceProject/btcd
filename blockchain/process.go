@@ -84,7 +84,7 @@ func (b *BlockChain) blockExists(hash *chainhash.Hash) (bool, error) {
 //
 // This function MUST be called with the chain state lock held (for writes).
 func (b *BlockChain) processOrphans(hash *chainhash.Hash, flags BehaviorFlags, traceData *bittrace.TraceData) error {
-	var orphanProcessRevision = structure.NewRevision(structure.FromString("revision_orphan_process"), traceData.CurrentInitSnapshot().ID)
+	var orphanProcessRevision = structure.NewRevision(structure.FromString("revision_orphan_process"), traceData.Snapshot.ID)
 
 	// Start with processing at least the passed hash.  Leave a little room
 	// for additional orphan blocks that need to be processed without
@@ -190,7 +190,9 @@ func (b *BlockChain) ProcessBlock(block *btcutil.Block, flags BehaviorFlags, tra
 			}
 		}
 		initSnapshot := bittrace.InitSnapshot(targetChainID, targetChainHeight, initTime, initStatus)
-		traceData.SetInitSnapshot(&initSnapshot)
+		if err := traceData.SetInitSnapshot(&initSnapshot); err != nil {
+			bittrace.Error("%v", err)
+		}
 
 		var receiveBlockRevision = structure.NewRevision(structure.FromString("revision_receive_block"), initSnapshot.ID)
 		if err := traceData.CommitRevision(receiveBlockRevision, "receive_block", time.Now()); err != nil {
@@ -198,7 +200,7 @@ func (b *BlockChain) ProcessBlock(block *btcutil.Block, flags BehaviorFlags, tra
 		}
 	}
 
-	var blockVerifyRevision = structure.NewRevision(structure.FromString("revision_block_verify"), traceData.CurrentInitSnapshot().ID)
+	var blockVerifyRevision = structure.NewRevision(structure.FromString("revision_block_verify"), traceData.Snapshot.ID)
 
 	fastAdd := flags&BFFastAdd == BFFastAdd
 

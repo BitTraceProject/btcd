@@ -1,6 +1,8 @@
 package bittrace
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"sync"
 	"time"
 
@@ -8,10 +10,7 @@ import (
 )
 
 type TraceData struct {
-	initSnapshot  *structure.Snapshot
-	finalSnapshot *structure.Snapshot
-	//revisionList  [][]byte
-	revisionList []*structure.Revision
+	*structure.Snapshot
 }
 
 var (
@@ -63,48 +62,39 @@ func UpdateFinalStatus(status structure.Status) {
 
 func NewTraceData() *TraceData {
 	return &TraceData{
-		initSnapshot: nil,
-		//revisionList: [][]byte{},
-		revisionList: []*structure.Revision{},
+		Snapshot: nil,
 	}
 }
 
-func (data *TraceData) SetInitSnapshot(snapshot *structure.Snapshot) {
-	data.initSnapshot = snapshot
-	Info("got a init snapshot:[%+v]", *snapshot)
-}
-
-func (data *TraceData) CurrentInitSnapshot() *structure.Snapshot {
-	return data.initSnapshot
-}
-
-func (data *TraceData) SetFinalSnapshot(snapshot *structure.Snapshot) {
-	data.finalSnapshot = snapshot
-	// TODO 为了调试方便，这里先输出原始
-	//for _, revision := range data.revisionList {
-	//	Info("snapshot revision:[%s]", string(revision))
-	//}
-	for _, revision := range data.revisionList {
-		Info("snapshot revision:[%+v]", *revision)
-	}
-	Info("got a final snapshot:[%+v]", *snapshot)
-}
-
-func (data *TraceData) CurrentFinalSnapshot() *structure.Snapshot {
-	return data.finalSnapshot
-}
-
-func (data *TraceData) CommitRevision(revision *structure.Revision, context string, commitTime time.Time) error {
-	//commitData, err := revision.Commit(context, commitTime)
-	_, err := revision.Commit(context, commitTime)
+func (data *TraceData) SetInitSnapshot(snapshot *structure.Snapshot) error {
+	data.Snapshot = snapshot
+	rawData, err := json.Marshal(*snapshot)
 	if err != nil {
 		return err
 	}
-	//data.revisionList = append(data.revisionList, commitData)
-	data.revisionList = append(data.revisionList, revision)
+	Info("got a init snapshot:[%+v],raw:[%s]", *snapshot, base64.RawStdEncoding.EncodeToString(rawData))
+	return nil
+}
+
+func (data *TraceData) SetFinalSnapshot(snapshot *structure.Snapshot) error {
+	data.Snapshot = snapshot
+	rawData, err := json.Marshal(*snapshot)
+	if err != nil {
+		return err
+	}
+	Info("got a final snapshot:[%+v],raw:[%s]", *snapshot, base64.RawStdEncoding.EncodeToString(rawData))
+	return nil
+}
+
+func (data *TraceData) CommitRevision(revision *structure.Revision, context string, commitTime time.Time) error {
+	err := revision.Commit(context, commitTime)
+	if err != nil {
+		return err
+	}
+	data.Snapshot.RevisionList = append(data.Snapshot.RevisionList, *revision)
 	return nil
 }
 
 func (data *TraceData) LastRevision() *structure.Revision {
-	return data.revisionList[len(data.revisionList)-1]
+	return &data.Snapshot.RevisionList[len(data.Snapshot.RevisionList)-1]
 }

@@ -26,7 +26,7 @@ import (
 //
 // This function MUST be called with the chain state lock held (for writes).
 func (b *BlockChain) maybeAcceptBlock(block *btcutil.Block, flags BehaviorFlags, traceData *bittrace.TraceData) (bool, error) {
-	var chainVerifyRevision = structure.NewRevision(structure.FromString("revision_chain_verify"), traceData.CurrentInitSnapshot().ID)
+	var chainVerifyRevision = structure.NewRevision(structure.FromString("revision_chain_verify"), traceData.Snapshot.ID)
 
 	// The height of this block is one more than the referenced previous
 	// block.

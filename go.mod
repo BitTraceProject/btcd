@@ -2,7 +2,7 @@ module github.com/btcsuite/btcd
 
 require (
 	github.com/BitTraceProject/BitTrace-Exporter v0.0.0-20221124104325-1e521eb4849f
-	github.com/BitTraceProject/BitTrace-Types v0.0.0-20221123122027-1a6d28b4011b
+	github.com/BitTraceProject/BitTrace-Types v0.0.0-20221124125507-1270b0ef0047
 	github.com/btcsuite/btcd/btcec/v2 v2.1.3
 	github.com/btcsuite/btcd/btcutil v1.1.2
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.0.1
@@ -26,8 +26,12 @@ require (
 	github.com/decred/dcrd/crypto/blake256 v1.0.0 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/kkdai/bstream v0.0.0-20161212061736-f391b8402d23 // indirect
+	github.com/kr/pretty v0.3.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c // indirect
+	golang.org/x/net v0.0.0-20220520000938-2e3eb7b945c2 // indirect
+	golang.org/x/xerrors v0.0.0-20220517211312-f3a8303e98df // indirect
+	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
+	gopkg.in/yaml.v3 v3.0.0 // indirect
 )
 
 replace github.com/btcsuite/btcd/btcutil => ./btcutil

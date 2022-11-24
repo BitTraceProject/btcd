@@ -89,7 +89,7 @@ function exitWithError() {
     infoln "clean temp files"
     sudo rm -rf "${pwd}"/"${temp_dir}"/
   fi
-  exec $deploy_root/clean.sh ${CONTAINER_NAME}
+  sudo bash $deploy_root/clean.sh ${CONTAINER_NAME}
   exit 0
 }
 

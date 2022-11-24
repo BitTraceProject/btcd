@@ -53,12 +53,12 @@ function exitWithError() {
   errorMsg=$1
   if [ -n "${errorMsg}" ]; then
     errorln "${errorMsg}"
+    clean ${CONTAINER_NAME}
   fi
   if [ -d "${temp_dir}" ]; then
     infoln "clean temp files"
     sudo rm -rf "${pwd}"/"${temp_dir}"/
   fi
-  clean ${CONTAINER_NAME}
   exit 0
 }
 

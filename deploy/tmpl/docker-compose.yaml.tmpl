@@ -19,11 +19,11 @@ services:
     labels:
       service: peer_btcd_service
     environment: # 通过环境变量设置常量，也可以不使用这里的
-      - CONTAINER_NAME:${CONTAINER_NAME:-peer0.btcd.testnet0} # logger name, container name
-      - BITTRACE_ROOT_DIR:/root/.bittrace # base path
-      - BITTRACE_CLIENT_DIR:peers # peer base path
-      - BITTRACE_LOG_DIR:logfiles # log base path
-      - BITTRACE_CONFIG_DIR:configs # config base path
+      - CONTAINER_NAME=${CONTAINER_NAME:-peer0.btcd.testnet0}
+      - BITTRACE_ROOT_DIR=/root/.bittrace
+      - BITTRACE_CLIENT_DIR=peers
+      - BITTRACE_LOG_DIR=logfiles
+      - BITTRACE_CONFIG_DIR=configs
     working_dir: /bittrace
     restart: unless-stopped
     logging:

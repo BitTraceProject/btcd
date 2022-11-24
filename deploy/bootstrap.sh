@@ -5,7 +5,6 @@ pwd=${HOME}/.bittrace
 peer_dir=${pwd}/peers
 tmpl_dir=${pwd}/tmpl
 temp_dir=${pwd}/.temp
-. ./clean.sh
 
 function precheck() {
   if [ ! -f "${tmpl_dir}/.env.tmpl" ]; then
@@ -87,6 +86,7 @@ function exitWithError() {
     infoln "clean temp files"
     sudo rm -rf "${pwd}"/"${temp_dir}"/
   fi
+  source ./clean.sh
   clean ${CONTAINER_NAME}
   exit 0
 }

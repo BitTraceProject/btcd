@@ -59,7 +59,7 @@ function main() {
   mkdir -p "${peer_dir}/${CONTAINER_NAME}/.btcd/"
   cp "${temp_dir}/.env" "${peer_dir}/${CONTAINER_NAME}/"
   cp "${temp_dir}/btcd.conf" "${peer_dir}/${CONTAINER_NAME}/.btcd/"
-  cp "${temp_dir}/docker-compose.yaml.tmpl" "${peer_dir}/${CONTAINER_NAME}/"
+  cp "${temp_dir}/docker-compose.yaml" "${peer_dir}/${CONTAINER_NAME}/"
 
   infoln "source env"
   cd "${peer_dir}/${CONTAINER_NAME}" || exit

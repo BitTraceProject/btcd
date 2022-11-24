@@ -30,7 +30,9 @@ bitlog-cli.exe
 *.sercet
 
 # output and data path
-tmpl/
+.btcd/
+.bittrace/
+logfiles/
 peers/
 out/
 output/

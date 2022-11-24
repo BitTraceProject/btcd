@@ -1,0 +1,36 @@
+version: '3'
+
+volumes:
+  peer_btcd:
+networks:
+  peer_btcd_network:
+    external: true
+services:
+  peer_btcd:
+    container_name: ${CONTAINER_NAME:-peer_btcd-0.net-0.testnet}
+    hostname: ${HOSTNAME:-peer_btcd-0.net-0.testnet}
+    image: ${IMAGE:-bittrace/peer_btcd:latest}
+    labels:
+      service: peer_btcd_service
+    environment:
+      - BITTRACE_ROOT_DIR:/root/.bittrace
+      - BITTRACE_CLIENT_DIR:peers
+      - BITTRACE_LOG_DIR:logfiles
+      - BITTRACE_CONFIG_DIR:configs
+    working_dir: /bittrace
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-file: "9999"
+        max-size: "1g"
+    command: btcd
+    volumes:
+      - ${HOME}/.bittrace:/root/.bittrace
+      - .btcd:/root/.btcd
+    ports:
+      - ${PORT_PEER_LOCAL:-18555}:${PORT_PEER:-18555}
+      - ${PORT_RPC_LOCAL:-18556}:${PORT_RPC:-18556}
+    networks:
+      peer_btcd_network:
+        ipv4_address: ${SUBNET_ADDRESS:-172.16.0.100}

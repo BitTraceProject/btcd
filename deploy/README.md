@@ -5,20 +5,15 @@
 ```shell
 git clone https://github.com/BitTraceProject/btcd.git
 cd btcd/deploy
-mkdir tmpl/
+export tmpl_dir=${HOME}/.bittrace/tmpl
+mkdir ${tmpl_dir}
 ```
 
-## modify `.env.tmpl` with the help of comments
+## modify tmpl files with the help of comments, note that the docker-compose tmpl file don't need to modify
 
 ```shell
-cp example/.env.example tmpl/.env.tmpl
-nano tmpl/.env.tmpl
-```
-
-## modify `btcd.conf.tmpl` with the help of comments
-
-```shell
-cp example/btcd.conf.example tmpl/btcd.conf.tmpl
+cp tmpl/* ${tmpl_dir}/
+nano .env.tmpl
 nano tmpl/btcd.conf.tmpl
 ```
 
@@ -26,4 +21,10 @@ nano tmpl/btcd.conf.tmpl
 
 ```shell
 bash bootstrap.sh
+```
+
+## run clean.sh when finish
+
+```shell
+bash clean.sh <CONTAINER_NAME you want to clean>
 ```

@@ -31,6 +31,7 @@ RUN set -ex \
   && go mod tidy \
   && go install -v . ./cmd/...
 
+VOLUME ["/root/.bittrace"]
 VOLUME ["/root/.btcd"]
 
 

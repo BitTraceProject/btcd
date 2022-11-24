@@ -15,4 +15,4 @@ function clean() {
 
 }}
 
-clean $1
+clean

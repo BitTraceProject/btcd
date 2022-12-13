@@ -3,7 +3,6 @@ package bittrace
 import (
 	"github.com/BitTraceProject/BitTrace-Exporter/common"
 	"github.com/BitTraceProject/BitTrace-Types/pkg/env"
-	"path/filepath"
 )
 
 // 初始化 logger
@@ -11,9 +10,7 @@ import (
 var (
 	logger   common.Logger
 	envPairs = map[string]string{
-		"CONTAINER_NAME":    "",
-		"BITTRACE_ROOT_DIR": "",
-		"BITTRACE_LOG_DIR":  "",
+		"CONTAINER_NAME": "",
 	}
 )
 
@@ -25,8 +22,7 @@ func init() {
 		panic(err)
 	}
 	loggerName := envPairs["CONTAINER_NAME"]
-	basePath := filepath.Join(envPairs["BITTRACE_ROOT_DIR"], envPairs["BITTRACE_LOG_DIR"])
-	logger = common.GetLogger(loggerName, basePath)
+	logger = common.GetLogger(loggerName)
 }
 
 func Info(format string, msg ...interface{}) {

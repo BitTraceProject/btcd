@@ -19,11 +19,9 @@ bash build.sh
 cd deploy
 export tmpl_dir=${HOME}/.bittrace/tmpl
 mkdir -p ${tmpl_dir}
-cp tmpl/.env.tmpl ${tmpl_dir}/
-cp tmpl/btcd.conf.tmpl ${tmpl_dir}/
-cp tmpl/docker-compose.yaml.tmpl ${tmpl_dir}/
-nano ${tmpl_dir}/.env.tmpl
-nano ${tmpl_dir}/tmpl/btcd.conf.tmpl
+cp tmpl/* ${tmpl_dir}/
+nano ${tmpl_dir}/.env.tmpl ## modify
+nano ${tmpl_dir}/tmpl/btcd.conf.tmpl ## modify
 ```
 
 ## run bootstrap.sh

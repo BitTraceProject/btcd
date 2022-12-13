@@ -15,7 +15,7 @@ function precheck() {
   if [ ! -f "${tmpl_dir}/btcd.conf.tmpl" ]; then
     exitWithError "btcd.conf.tmpl not prepared"
   fi
-  if [ ! -f "${tmpl_dir}/docker-compose.yaml.tmpl" ]; then
+  if [ ! -f "${tmpl_dir}/docker-compose.yaml" ]; then
     exitWithError "docker-compose.yaml not prepared"
   fi
   source "${tmpl_dir}/.env.tmpl"
@@ -64,7 +64,7 @@ function main() {
   infoln "copy btcd.conf tmpl"
   cp "${tmpl_dir}/btcd.conf.tmpl" "${temp_dir}/btcd.conf"
   infoln "copy docker-compose.yaml tmpl"
-  cp "${tmpl_dir}/docker-compose.yaml.tmpl" "${temp_dir}/docker-compose.yaml"
+  cp "${tmpl_dir}/docker-compose.yaml" "${temp_dir}/docker-compose.yaml"
 
   infoln "copy tmpl to peer ${CONTAINER_NAME}"
   mkdir -p "${peer_dir}/${CONTAINER_NAME}/.btcd/"

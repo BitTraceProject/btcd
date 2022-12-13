@@ -54,11 +54,10 @@ cloud.google.com/go/storage v1.8.0/go.mod h1:Wv1Oy7z6Yz3DshWRJFhqM/UCfaWIRTdp0RX
 cloud.google.com/go/storage v1.10.0/go.mod h1:FLPqc6j+Ki4BU591ie1oL6qBQGu2Bl/tZ9ullr3+Kg0=
 cloud.google.com/go/storage v1.14.0/go.mod h1:GrKmX003DSIwi9o29oFT7YDnHYwZoctc3fOKtUw0Xmo=
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
-github.com/BitTraceProject/BitTrace-Exporter v0.0.0-20221124104325-1e521eb4849f h1:v6xvj72zSZKXKw61IOJnOgTitKBmGvAI/F7mxBBL3Bk=
-github.com/BitTraceProject/BitTrace-Exporter v0.0.0-20221124104325-1e521eb4849f/go.mod h1:BOa6iQugrpSCEV0rDFYLa4T/fKk5yNRqVB8S/HIQ7dw=
-github.com/BitTraceProject/BitTrace-Types v0.0.0-20221123122027-1a6d28b4011b/go.mod h1:maOPx2CKZUBkkuNow0eISgTN520pbTXK+SOveJibZN4=
-github.com/BitTraceProject/BitTrace-Types v0.0.0-20221124125507-1270b0ef0047 h1:ghG3xoFuUOl1pbi02s+FDvco2r4AhUV4qdD+iiGUveI=
-github.com/BitTraceProject/BitTrace-Types v0.0.0-20221124125507-1270b0ef0047/go.mod h1:KvkgKxudAbBVEg02vclUjLgs2fjhJ2/IV9jGF8IwBRU=
+github.com/BitTraceProject/BitTrace-Exporter v0.0.0-20221213053649-4a090c109f74 h1:jig0OHtSr3PhZfYBYJLwAqSNrHJl7H9F1q2/GTrL+RY=
+github.com/BitTraceProject/BitTrace-Exporter v0.0.0-20221213053649-4a090c109f74/go.mod h1:I1EzYIRFC4W5akTgoKUPLSDRnfBjUf3uVM8ep4Ke98I=
+github.com/BitTraceProject/BitTrace-Types v0.0.0-20221206154702-892010d46dc6 h1:LrHh11gZBjBeIJjB3C+UA5KM9LAxiVbsHTEiqk9oROE=
+github.com/BitTraceProject/BitTrace-Types v0.0.0-20221206154702-892010d46dc6/go.mod h1:KvkgKxudAbBVEg02vclUjLgs2fjhJ2/IV9jGF8IwBRU=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/DataDog/datadog-go v3.2.0+incompatible/go.mod h1:LButxg5PwREeZtORoXG3tL4fMGNddJ+vMq1mwgfaqoQ=
@@ -125,6 +124,8 @@ github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1/go.mod h1:hyedUtir6IdtD/7lIxGeC
 github.com/decred/dcrd/lru v1.0.0 h1:Kbsb1SFDsIlaupWPwsPp+dkxiBY1frcS07PCPgotKz8=
 github.com/decred/dcrd/lru v1.0.0/go.mod h1:mxKOwFd7lFjN2GZYsiz/ecgqR6kkYAl+0pz0tEMk218=
 github.com/dustin/go-humanize v1.0.0/go.mod h1:HtrtbFcZ19U5GC7JDqmcUSB87Iq5E25KnS6fMYU6eOk=
+github.com/edsrzf/mmap-go v1.1.0 h1:6EUwBLQ/Mcr1EYLE4Tn1VdW1A4ckqCQWZBw8Hr0kjpQ=
+github.com/edsrzf/mmap-go v1.1.0/go.mod h1:19H/e8pUPLicwkyNgOykDXkJ9F0MHE+Z52B8EIth78Q=
 github.com/envoyproxy/go-control-plane v0.9.0/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
 github.com/envoyproxy/go-control-plane v0.9.1-0.20191026205805-5f8ba28d4473/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
 github.com/envoyproxy/go-control-plane v0.9.4/go.mod h1:6rpuAdCZL397s3pYoYcLgu1mIlRU8Am5FuJP05cCM98=

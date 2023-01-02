@@ -1,6 +1,7 @@
 package bittrace
 
 import (
+	"encoding/base64"
 	"github.com/BitTraceProject/BitTrace-Exporter/common"
 	"github.com/BitTraceProject/BitTrace-Types/pkg/env"
 )
@@ -8,13 +9,13 @@ import (
 // 初始化 logger
 
 var (
-	logger   common.Logger
-	envPairs = map[string]string{
+	// logger 分离
+	prodLogger  common.Logger
+	debugLogger common.Logger
+	envPairs    = map[string]string{
 		"CONTAINER_NAME": "",
 	}
 )
-
-// TODO 替换为最新的库，直接指定 log filepath，这里先暂时用着
 
 func init() {
 	err := env.LookupEnvPairs(&envPairs)
@@ -22,21 +23,27 @@ func init() {
 		panic(err)
 	}
 	loggerName := envPairs["CONTAINER_NAME"]
-	logger = common.GetLogger(loggerName)
+	prodLogger = common.GetLogger(loggerName)
+	debugLogger = common.GetLogger(loggerName + "_debug")
+}
+
+func Data(data []byte) {
+	logData := base64.StdEncoding.EncodeToString(data)
+	prodLogger.Msg(logData)
 }
 
 func Info(format string, msg ...interface{}) {
-	logger.Info(format, msg)
+	debugLogger.Info(format, msg)
 }
 
 func Warn(format string, msg ...interface{}) {
-	logger.Warn(format, msg)
+	debugLogger.Warn(format, msg)
 }
 
 func Error(format string, msg ...interface{}) {
-	logger.Error(format, msg)
+	debugLogger.Error(format, msg)
 }
 
 func Fatal(format string, msg ...interface{}) {
-	logger.Fatal(format, msg)
+	debugLogger.Fatal(format, msg)
 }

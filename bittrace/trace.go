@@ -1,7 +1,6 @@
 package bittrace
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"sync"
 	"time"
@@ -72,7 +71,7 @@ func (data *TraceData) SetInitSnapshot(snapshot *structure.Snapshot) error {
 	if err != nil {
 		return err
 	}
-	Info("got a init snapshot:[%+v],raw:[%s]", *snapshot, base64.RawStdEncoding.EncodeToString(rawData))
+	Data(rawData)
 	return nil
 }
 
@@ -82,7 +81,7 @@ func (data *TraceData) SetFinalSnapshot(snapshot *structure.Snapshot) error {
 	if err != nil {
 		return err
 	}
-	Info("got a final snapshot:[%+v],raw:[%s]", *snapshot, base64.RawStdEncoding.EncodeToString(rawData))
+	Data(rawData)
 	return nil
 }
 

@@ -1315,7 +1315,6 @@ out:
 	for {
 		select {
 		case m := <-sm.msgChan:
-			var traceData = bittrace.NewTraceData()
 			switch msg := m.(type) {
 			case *newPeerMsg:
 				sm.handleNewPeerMsg(msg.peer)
@@ -1325,6 +1324,7 @@ out:
 				msg.reply <- struct{}{}
 
 			case *blockMsg:
+				var traceData = bittrace.NewTraceData()
 				sm.handleBlockMsg(msg, traceData)
 				msg.reply <- struct{}{}
 
@@ -1354,6 +1354,7 @@ out:
 				msg.reply <- peerID
 
 			case processBlockMsg:
+				var traceData = bittrace.NewTraceData()
 				_, isOrphan, err := sm.chain.ProcessBlock(
 					msg.block, msg.flags, traceData)
 				if err != nil {

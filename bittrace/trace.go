@@ -16,16 +16,15 @@ var (
 	smMux       sync.Mutex
 	snapshotMap map[string]structure.Snapshot
 
-	fsMux       sync.RWMutex
-	finalStatus structure.Status
+	finalStatus *structure.Status
 )
 
-// TODO 这里初始化需要弄，初始化状态，初始化链 id 等等，在 client 启动的某个位置添加
+// TODO 这里初始化需要弄，初始化状态，初始化链 id 等等（即 btcd 可能是中途启动的，不是一个全新的），在 client 启动的某个位置添加
 func init() {
 	snapshotMap = map[string]structure.Snapshot{}
 }
 
-func InitSnapshot(targetChainID string, targetChainHeight int32, initTime time.Time, initStatus structure.Status) structure.Snapshot {
+func InitSnapshot(targetChainID string, targetChainHeight int32, initTime time.Time, initStatus *structure.Status) structure.Snapshot {
 	smMux.Lock()
 	defer smMux.Unlock()
 	snapshot := structure.InitSnapshot(targetChainID, targetChainHeight, initTime, initStatus)
@@ -33,7 +32,7 @@ func InitSnapshot(targetChainID string, targetChainHeight int32, initTime time.T
 	return snapshot
 }
 
-func FinalSnapshot(snapshotID string, finalTime time.Time, finalStatus structure.Status) structure.Snapshot {
+func FinalSnapshot(snapshotID string, finalTime time.Time, finalStatus *structure.Status) structure.Snapshot {
 	smMux.Lock()
 	defer smMux.Unlock()
 	// 这里保证 snapshot 一定存在
@@ -43,19 +42,21 @@ func FinalSnapshot(snapshotID string, finalTime time.Time, finalStatus structure
 	return snapshot
 }
 
-func InitFinalStatus(status structure.Status) {
+func InitFinalStatus(status *structure.Status) {
 	finalStatus = status
 }
 
-func GetFinalStatus() structure.Status {
-	fsMux.RLock()
-	defer fsMux.RUnlock()
+// GetFinalStatus
+// TODO 如果以 Update 的方式不可行，这里就要有方式能够获取到最新 Status；
+// 另外，这个 Status 可能需要压缩；
+func GetFinalStatus() *structure.Status {
 	return finalStatus
 }
 
-func UpdateFinalStatus(status structure.Status) {
-	fsMux.Lock()
-	defer fsMux.Unlock()
+// UpdateFinalStatus
+// TODO 如果以 Update 的方式，就要确保实时更新 Status；
+// 即在 Revision 处实时的加上 Add，Remove，Reset，Swap，Transfer 等方法
+func UpdateFinalStatus(status *structure.Status) {
 	finalStatus = status
 }
 
@@ -90,10 +91,10 @@ func (data *TraceData) CommitRevision(revision *structure.Revision, context stri
 	if err != nil {
 		return err
 	}
-	data.Snapshot.RevisionList = append(data.Snapshot.RevisionList, *revision)
+	data.Snapshot.RevisionList = append(data.Snapshot.RevisionList, revision)
 	return nil
 }
 
 func (data *TraceData) LastRevision() *structure.Revision {
-	return &data.Snapshot.RevisionList[len(data.Snapshot.RevisionList)-1]
+	return data.Snapshot.RevisionList[len(data.Snapshot.RevisionList)-1]
 }

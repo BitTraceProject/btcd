@@ -287,7 +287,7 @@ func (b *BlockChain) removeOrphanBlock(orphan *orphanBlock) {
 // blocks and will remove the oldest received orphan block if the limit is
 // exceeded.
 func (b *BlockChain) addOrphanBlock(block *btcutil.Block, traceData *bittrace.TraceData) {
-	var orphanExtendRevision = structure.NewRevision(structure.FromString("revision_orphan_extend"), traceData.Snapshot.ID)
+	var orphanExtendRevision = structure.NewRevision(structure.RevisionTypeOrphanExtend, traceData.Snapshot.ID, structure.RevisionDataOrphanExtend{})
 
 	// Remove expired orphan blocks.
 	for _, oBlock := range b.orphans {
@@ -329,9 +329,7 @@ func (b *BlockChain) addOrphanBlock(block *btcutil.Block, traceData *bittrace.Tr
 	prevHash := &block.MsgBlock().Header.PrevBlock
 	b.prevOrphans[*prevHash] = append(b.prevOrphans[*prevHash], oBlock)
 
-	if err := traceData.CommitRevision(orphanExtendRevision, fmt.Sprintf("prevOrphanNum=%d", len(b.prevOrphans[*prevHash])), time.Now()); err != nil {
-		bittrace.Error("%v", err)
-	}
+	traceData.CommitRevision(orphanExtendRevision, time.Now(), "success")
 }
 
 // SequenceLock represents the converted relative lock-time in seconds, and
@@ -567,7 +565,7 @@ func (b *BlockChain) getReorganizeNodes(node *blockNode) (*list.List, *list.List
 // This function MUST be called with the chain state lock held (for writes).
 func (b *BlockChain) connectBlock(node *blockNode, block *btcutil.Block,
 	view *UtxoViewpoint, stxos []SpentTxOut, traceData *bittrace.TraceData) error {
-	var mainchainExtendRevision = structure.NewRevision(structure.FromString("revision_mainchain_extend"), traceData.Snapshot.ID)
+	var mainchainExtendRevision = structure.NewRevision(structure.RevisionTypeMainChainExtend, traceData.Snapshot.ID, structure.RevisionDataMainChainExtend{})
 
 	// Make sure it's extending the end of the best chain.
 	prevHash := &block.MsgBlock().Header.PrevBlock
@@ -678,9 +676,7 @@ func (b *BlockChain) connectBlock(node *blockNode, block *btcutil.Block,
 	b.sendNotification(NTBlockConnected, block)
 	b.chainLock.Lock()
 
-	if err := traceData.CommitRevision(mainchainExtendRevision, fmt.Sprintf("chainHeight=%d;diffBits=%d", b.bestChain.Tip().height, b.bestChain.Tip().bits), time.Now()); err != nil {
-		bittrace.Error("%v", err)
-	}
+	traceData.CommitRevision(mainchainExtendRevision, time.Now(), "success")
 	return nil
 }
 
@@ -825,7 +821,7 @@ func countSpentOutputs(block *btcutil.Block) int {
 //
 // This function MUST be called with the chain state lock held (for writes).
 func (b *BlockChain) reorganizeChain(detachNodes, attachNodes *list.List, traceData *bittrace.TraceData) error {
-	var chainSwapRevision = structure.NewRevision(structure.FromString("revision_chain_swap"), traceData.Snapshot.ID)
+	var chainSwapRevision = structure.NewRevision(structure.RevisionTypeChainSwap, traceData.Snapshot.ID, structure.RevisionDataChainSwap{})
 
 	// Nothing to do if no reorganize nodes were provided.
 	if detachNodes.Len() == 0 && attachNodes.Len() == 0 {
@@ -1072,9 +1068,7 @@ func (b *BlockChain) reorganizeChain(detachNodes, attachNodes *list.List, traceD
 	log.Infof("REORGANIZE: New best chain head is %v (height %v)",
 		newBest.hash, newBest.height)
 
-	if err := traceData.CommitRevision(chainSwapRevision, fmt.Sprintf("oldBestHeight=%d;newBestHeight=%d", oldBest.height, newBest.height), time.Now()); err != nil {
-		bittrace.Error("%v", err)
-	}
+	traceData.CommitRevision(chainSwapRevision, time.Now(), "success")
 	return nil
 }
 
@@ -1189,26 +1183,21 @@ func (b *BlockChain) connectBestChain(node *blockNode, block *btcutil.Block, fla
 	// We're extending (or creating) a side chain, but the cumulative
 	// work for this new side chain is not enough to make it the new chain.
 	if node.workSum.Cmp(b.bestChain.Tip().workSum) <= 0 {
-		var sidechainExtendRevision = structure.NewRevision(structure.FromString("revision_sidechain_extend"), traceData.Snapshot.ID)
+		var sidechainExtendRevision = structure.NewRevision(structure.RevisionTypeSideChainExtend, traceData.Snapshot.ID, structure.RevisionDataSideChainExtend{})
 		// Log information about how the block is forking the chain.
 		fork := b.bestChain.FindFork(node)
 		if fork.hash.IsEqual(parentHash) {
 			log.Infof("FORK: Block %v forks the chain at height %d"+
 				"/block %v, but does not cause a reorganize",
 				node.hash, fork.height, fork.hash)
-
 			// TODO 这里的 context 是 new side chain
-			if err := traceData.CommitRevision(sidechainExtendRevision, fmt.Sprintf("sidechainNewHeight=%d", fork.height), time.Now()); err != nil {
-				bittrace.Error("%v", err)
-			}
+			traceData.CommitRevision(sidechainExtendRevision, time.Now(), "success")
 		} else {
 			log.Infof("EXTEND FORK: Block %v extends a side chain "+
 				"which forks the chain at height %d/block %v",
 				node.hash, fork.height, fork.hash)
 			// TODO 这里的 context 是 extend side chain
-			if err := traceData.CommitRevision(sidechainExtendRevision, fmt.Sprintf("sidechainExtendHeight=%d", fork.height), time.Now()); err != nil {
-				bittrace.Error("%v", err)
-			}
+			traceData.CommitRevision(sidechainExtendRevision, time.Now(), "success")
 		}
 
 		return false, nil

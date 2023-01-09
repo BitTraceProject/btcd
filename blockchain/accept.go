@@ -26,7 +26,7 @@ import (
 //
 // This function MUST be called with the chain state lock held (for writes).
 func (b *BlockChain) maybeAcceptBlock(block *btcutil.Block, flags BehaviorFlags, traceData *bittrace.TraceData) (bool, error) {
-	var chainVerifyRevision = structure.NewRevision(structure.FromString("revision_chain_verify"), traceData.Snapshot.ID)
+	var chainVerifyRevision = structure.NewRevision(structure.RevisionTypeChainVerify, traceData.Snapshot.ID, structure.RevisionDataChainVerify{})
 
 	// The height of this block is one more than the referenced previous
 	// block.
@@ -34,9 +34,11 @@ func (b *BlockChain) maybeAcceptBlock(block *btcutil.Block, flags BehaviorFlags,
 	prevNode := b.index.LookupNode(prevHash)
 	if prevNode == nil {
 		str := fmt.Sprintf("previous block %s is unknown", prevHash)
+		traceData.CommitRevision(chainVerifyRevision, time.Now(), "failed")
 		return false, ruleError(ErrPreviousBlockUnknown, str)
 	} else if b.index.NodeStatus(prevNode).KnownInvalid() {
 		str := fmt.Sprintf("previous block %s is known to be invalid", prevHash)
+		traceData.CommitRevision(chainVerifyRevision, time.Now(), "failed")
 		return false, ruleError(ErrInvalidAncestorBlock, str)
 	}
 
@@ -47,17 +49,11 @@ func (b *BlockChain) maybeAcceptBlock(block *btcutil.Block, flags BehaviorFlags,
 	// position of the block within the block chain.
 	err := b.checkBlockContext(block, prevNode, flags)
 	if err != nil {
-
-		if err := traceData.CommitRevision(chainVerifyRevision, "chain_verify_failed checkBlockContext failed", time.Now()); err != nil {
-			bittrace.Error("%v", err)
-		}
-
+		traceData.CommitRevision(chainVerifyRevision, time.Now(), "failed")
 		return false, err
 	}
 
-	if err := traceData.CommitRevision(chainVerifyRevision, "chain_verify_success", time.Now()); err != nil {
-		bittrace.Error("%v", err)
-	}
+	traceData.CommitRevision(chainVerifyRevision, time.Now(), "success")
 
 	// Insert the block into the database if it's not already there.  Even
 	// though it is possible the block will ultimately fail to connect, it

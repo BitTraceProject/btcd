@@ -1329,8 +1329,8 @@ out:
 				msg.reply <- struct{}{}
 
 				{
-					finalSnapshot := bittrace.FinalSnapshot(traceData.Snapshot.ID, time.Now(), bittrace.GetFinalStatus())
-					if err := traceData.SetFinalSnapshot(&finalSnapshot); err != nil {
+					finalSnapshot := bittrace.FinalSnapshot(traceData.Snapshot.ID, time.Now())
+					if err := traceData.SetFinalSnapshot(finalSnapshot); err != nil {
 						bittrace.Error("%v", err)
 					}
 				}
@@ -1365,8 +1365,8 @@ out:
 				}
 
 				{
-					finalSnapshot := bittrace.FinalSnapshot(traceData.Snapshot.ID, time.Now(), bittrace.GetFinalStatus())
-					if err := traceData.SetFinalSnapshot(&finalSnapshot); err != nil {
+					finalSnapshot := bittrace.FinalSnapshot(traceData.Snapshot.ID, time.Now())
+					if err := traceData.SetFinalSnapshot(finalSnapshot); err != nil {
 						bittrace.Error("%v", err)
 					}
 				}

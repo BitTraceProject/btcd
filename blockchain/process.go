@@ -84,7 +84,7 @@ func (b *BlockChain) blockExists(hash *chainhash.Hash) (bool, error) {
 //
 // This function MUST be called with the chain state lock held (for writes).
 func (b *BlockChain) processOrphans(hash *chainhash.Hash, flags BehaviorFlags, traceData *bittrace.TraceData) error {
-	var orphanProcessRevision = structure.NewRevision(structure.FromString("revision_orphan_process"), traceData.Snapshot.ID)
+	var orphanProcessRevision = structure.NewRevision(structure.RevisionTypeOrphanProcess, traceData.Snapshot.ID, structure.RevisionDataOrphanProcess{})
 
 	// Start with processing at least the passed hash.  Leave a little room
 	// for additional orphan blocks that need to be processed without
@@ -132,9 +132,7 @@ func (b *BlockChain) processOrphans(hash *chainhash.Hash, flags BehaviorFlags, t
 		}
 	}
 
-	if err := traceData.CommitRevision(orphanProcessRevision, fmt.Sprintf("processHashNum=%d", len(processHashes)), time.Now()); err != nil {
-		bittrace.Error("%v", err)
-	}
+	traceData.CommitRevision(orphanProcessRevision, time.Now(), "success")
 	return nil
 }
 
@@ -157,10 +155,9 @@ func (b *BlockChain) ProcessBlock(block *btcutil.Block, flags BehaviorFlags, tra
 		// init snapshot
 		var (
 			forkHeight        int32 // 通过回溯 prevNode 找它
-			targetChainID     = structure.GenChainID(forkHeight)
+			targetChainID     string
 			targetChainHeight int32 // 通过回溯 prevNode 计算
 			initTime          = time.Now()
-			initStatus        = bittrace.GetFinalStatus()
 		)
 		// 搞成工具函数
 		// The height of this block is one more than the referenced previous
@@ -174,7 +171,8 @@ func (b *BlockChain) ProcessBlock(block *btcutil.Block, flags BehaviorFlags, tra
 			targetChainHeight = b.bestChain.Height() + 1
 		} else {
 			// 否则当前区块可能属于其他 sidechain，则 forkHeight 通过回溯计算
-			// TODO 其他复杂情况的单独处理，如 prevBlock 不存在，prevBlock 是已知但是无效的
+			// 其他复杂情况的单独处理，如 prevBlock 不存在，prevBlock 是已知但是无效的
+			// TODO 计算侧链情况下的 fork height 和 target chain height
 			if prevNode == nil {
 				//str := fmt.Sprintf("previous block %s is unknown", prevHash)
 				//return false, ruleError(ErrPreviousBlockUnknown, str)
@@ -189,18 +187,19 @@ func (b *BlockChain) ProcessBlock(block *btcutil.Block, flags BehaviorFlags, tra
 				targetChainHeight = prevNode.height + 1
 			}
 		}
-		initSnapshot := bittrace.InitSnapshot(targetChainID, targetChainHeight, initTime, initStatus)
-		if err := traceData.SetInitSnapshot(&initSnapshot); err != nil {
+		targetChainID = structure.GenChainID(forkHeight)
+		initSnapshot := bittrace.InitSnapshot(targetChainID, targetChainHeight, initTime)
+		if err := traceData.SetInitSnapshot(initSnapshot); err != nil {
 			bittrace.Error("%v", err)
 		}
 
-		var receiveBlockRevision = structure.NewRevision(structure.FromString("revision_receive_block"), initSnapshot.ID)
-		if err := traceData.CommitRevision(receiveBlockRevision, "receive_block", time.Now()); err != nil {
-			bittrace.Error("%v", err)
-		}
+		var receiveBlockRevision = structure.NewRevision(structure.RevisionTypeBlockReceive, initSnapshot.ID, structure.RevisionDataBlockReceive{})
+		// no status change, so no event and result
+		traceData.CommitRevision(receiveBlockRevision, time.Now(), "success")
 	}
 
-	var blockVerifyRevision = structure.NewRevision(structure.FromString("revision_block_verify"), traceData.Snapshot.ID)
+	var blockVerifyRevision = structure.NewRevision(structure.RevisionTypeBlockVerify, traceData.Snapshot.ID, structure.RevisionDataBlockVerify{})
+	// TODO 所有中途 return 都需要处理 revision
 
 	fastAdd := flags&BFFastAdd == BFFastAdd
 
@@ -214,18 +213,21 @@ func (b *BlockChain) ProcessBlock(block *btcutil.Block, flags BehaviorFlags, tra
 	}
 	if exists {
 		str := fmt.Sprintf("already have block %v", blockHash)
+		traceData.CommitRevision(blockVerifyRevision, time.Now(), "failed")
 		return false, false, ruleError(ErrDuplicateBlock, str)
 	}
 
 	// The block must not already exist as an orphan.
 	if _, exists := b.orphans[*blockHash]; exists {
 		str := fmt.Sprintf("already have block (orphan) %v", blockHash)
+		traceData.CommitRevision(blockVerifyRevision, time.Now(), "failed")
 		return false, false, ruleError(ErrDuplicateBlock, str)
 	}
 
 	// Perform preliminary sanity checks on the block and its transactions.
 	err = checkBlockSanity(block, b.chainParams.PowLimit, b.timeSource, flags)
 	if err != nil {
+		traceData.CommitRevision(blockVerifyRevision, time.Now(), "failed")
 		return false, false, err
 	}
 
@@ -238,6 +240,7 @@ func (b *BlockChain) ProcessBlock(block *btcutil.Block, flags BehaviorFlags, tra
 	blockHeader := &block.MsgBlock().Header
 	checkpointNode, err := b.findPreviousCheckpoint()
 	if err != nil {
+		traceData.CommitRevision(blockVerifyRevision, time.Now(), "failed")
 		return false, false, err
 	}
 	if checkpointNode != nil {
@@ -247,15 +250,10 @@ func (b *BlockChain) ProcessBlock(block *btcutil.Block, flags BehaviorFlags, tra
 			str := fmt.Sprintf("block %v has timestamp %v before "+
 				"last checkpoint timestamp %v", blockHash,
 				blockHeader.Timestamp, checkpointTime)
-
-			if err := traceData.CommitRevision(blockVerifyRevision, "block_verify_failed timestamp before last checkpoint", time.Now()); err != nil {
-				bittrace.Error("%v", err)
-			}
-
+			traceData.CommitRevision(blockVerifyRevision, time.Now(), "failed")
 			return false, false, ruleError(ErrCheckpointTimeTooOld, str)
 		}
 		if !fastAdd {
-			// TODO 不只是此处，还有很多处像这样的特殊情况都需要额外讨论
 			// Even though the checks prior to now have already ensured the
 			// proof of work exceeds the claimed amount, the claimed amount
 			// is a field in the block header which could be forged.  This
@@ -270,18 +268,12 @@ func (b *BlockChain) ProcessBlock(block *btcutil.Block, flags BehaviorFlags, tra
 				str := fmt.Sprintf("block target difficulty of %064x "+
 					"is too low when compared to the previous "+
 					"checkpoint", currentTarget)
-
-				if err := traceData.CommitRevision(blockVerifyRevision, "block_verify_failed difficulty too low than previous", time.Now()); err != nil {
-					bittrace.Error("%v", err)
-				}
-
+				traceData.CommitRevision(blockVerifyRevision, time.Now(), "failed")
 				return false, false, ruleError(ErrDifficultyTooLow, str)
 			}
 		}
 	}
-	if err := traceData.CommitRevision(blockVerifyRevision, "block_verify_success", time.Now()); err != nil {
-		bittrace.Error("%v", err)
-	}
+	traceData.CommitRevision(blockVerifyRevision, time.Now(), "success")
 	// Handle orphan blocks.
 	prevHash := &blockHeader.PrevBlock
 	prevHashExists, err := b.blockExists(prevHash)

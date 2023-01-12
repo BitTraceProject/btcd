@@ -33,7 +33,7 @@ services:
         max-size: "1g"
     command: btcd
     volumes:
-      - ${HOME}/.bittrace:/root/.bittrace # 这里是绝对目录映射
+      - /root/.bittrace:/root/.bittrace # 这里是绝对目录映射
       - .btcd:/root/.btcd # # 这里是相对目录映射，直接使用 .btcd
     ports:
       - ${PORT_PEER_LOCAL:-18555}:${PORT_PEER:-18555}

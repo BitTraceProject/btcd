@@ -1,7 +1,7 @@
 #!/bin/bash
 
 function clean() {
-    pwd=${HOME}/.bittrace
+    pwd=/root/.bittrace
     peer_dir=${pwd}/peers
     log_dir=${pwd}/logfiles
     CONTAINER_NAME=$1

@@ -1,6 +1,6 @@
 # Bootstrap a btcd peer
 
-## clone this project and prepare
+## switch to root user and clone this project, then prepare
 
 ```shell
 git clone https://github.com/BitTraceProject/btcd.git
@@ -17,11 +17,11 @@ bash build.sh
 
 ```shell
 cd deploy
-export tmpl_dir=${HOME}/.bittrace/tmpl
+export tmpl_dir=/root/.bittrace/tmpl
 mkdir -p ${tmpl_dir}
 cp tmpl/* ${tmpl_dir}/
 nano ${tmpl_dir}/.env.tmpl ## modify
-nano ${tmpl_dir}/tmpl/btcd.conf.tmpl ## modify
+nano ${tmpl_dir}/btcd.conf.tmpl ## modify
 ```
 
 ## run bootstrap.sh

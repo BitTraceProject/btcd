@@ -1,7 +1,6 @@
 #!/bin/bash
 
-subnet_name=peer_btcd_network
-pwd=${HOME}/.bittrace
+pwd=/root/.bittrace
 peer_dir=${pwd}/peers
 tmpl_dir=${pwd}/tmpl
 temp_dir=${pwd}/.temp

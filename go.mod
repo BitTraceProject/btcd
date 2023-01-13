@@ -1,7 +1,7 @@
 module github.com/btcsuite/btcd
 
 require (
-	github.com/BitTraceProject/BitTrace-Exporter v0.0.0-20230112132513-5b94cad9de86 // update
+	github.com/BitTraceProject/BitTrace-Exporter v0.0.0-20230113122946-e7635f5cb71e // update
 	github.com/BitTraceProject/BitTrace-Types v0.0.0-20230109124149-45c76275af51 // update
 	github.com/btcsuite/btcd/btcec/v2 v2.1.3
 	github.com/btcsuite/btcd/btcutil v1.1.2
@@ -24,7 +24,6 @@ require (
 require (
 	github.com/aead/siphash v1.0.1 // indirect
 	github.com/decred/dcrd/crypto/blake256 v1.0.0 // indirect
-	github.com/edsrzf/mmap-go v1.1.0 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/kkdai/bstream v0.0.0-20161212061736-f391b8402d23 // indirect
 	github.com/kr/pretty v0.3.0 // indirect

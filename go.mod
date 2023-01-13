@@ -1,8 +1,8 @@
 module github.com/btcsuite/btcd
 
 require (
-	github.com/BitTraceProject/BitTrace-Exporter v0.0.0-20230113122946-e7635f5cb71e // update
-	github.com/BitTraceProject/BitTrace-Types v0.0.0-20230109124149-45c76275af51 // update
+	github.com/BitTraceProject/BitTrace-Exporter v0.0.0-20230113140638-e410a2155842 // update
+	github.com/BitTraceProject/BitTrace-Types v0.0.0-20230113135814-1c824cfb4b3f // update
 	github.com/btcsuite/btcd/btcec/v2 v2.1.3
 	github.com/btcsuite/btcd/btcutil v1.1.2
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.0.1

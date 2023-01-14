@@ -1,7 +1,6 @@
 package bittrace
 
 import (
-	"encoding/base64"
 	"github.com/BitTraceProject/BitTrace-Exporter/common"
 	"github.com/BitTraceProject/BitTrace-Types/pkg/env"
 )
@@ -28,8 +27,7 @@ func init() {
 }
 
 func Data(data []byte) {
-	logData := base64.StdEncoding.EncodeToString(data)
-	prodLogger.Msg(logData)
+	prodLogger.Msg(string(data))
 }
 
 func Info(format string, msg ...interface{}) {

@@ -1,10 +1,10 @@
 package bittrace
 
 import (
-	"encoding/json"
 	"sync"
 	"time"
 
+	common "github.com/BitTraceProject/BitTrace-Types/pkg/common"
 	"github.com/BitTraceProject/BitTrace-Types/pkg/structure"
 )
 
@@ -47,7 +47,8 @@ func NewTraceData() *TraceData {
 
 func (data *TraceData) SetInitSnapshot(snapshot *structure.Snapshot) error {
 	data.Snapshot = snapshot
-	rawData, err := json.Marshal(*snapshot)
+	gobCodec := common.NewCodecGob(nil)
+	rawData, err := gobCodec.Encode(snapshot)
 	if err != nil {
 		return err
 	}
@@ -57,7 +58,8 @@ func (data *TraceData) SetInitSnapshot(snapshot *structure.Snapshot) error {
 
 func (data *TraceData) SetFinalSnapshot(snapshot *structure.Snapshot) error {
 	data.Snapshot = snapshot
-	rawData, err := json.Marshal(*snapshot)
+	gobCodec := common.NewCodecGob(nil)
+	rawData, err := gobCodec.Encode(snapshot)
 	if err != nil {
 		return err
 	}

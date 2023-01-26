@@ -24,7 +24,7 @@ func init() {
 func InitSnapshot(targetChainID string, targetChainHeight int32, initTime time.Time) *structure.Snapshot {
 	smMux.Lock()
 	defer smMux.Unlock()
-	snapshot := structure.NewSnapshot(targetChainID, targetChainHeight, initTime)
+	snapshot := structure.NewInitSnapshot(targetChainID, targetChainHeight, initTime)
 	snapshotMap[snapshot.ID] = snapshot
 	return snapshot
 }
@@ -45,25 +45,25 @@ func NewTraceData() *TraceData {
 	}
 }
 
-func (data *TraceData) SetInitSnapshot(snapshot *structure.Snapshot) error {
+func (data *TraceData) SetInitSnapshot(bestHeight int32, snapshot *structure.Snapshot) error {
 	data.Snapshot = snapshot
 	gobCodec := common.NewCodecGob(nil)
 	rawData, err := gobCodec.Encode(snapshot)
 	if err != nil {
 		return err
 	}
-	Data(rawData)
+	Data(bestHeight, rawData)
 	return nil
 }
 
-func (data *TraceData) SetFinalSnapshot(snapshot *structure.Snapshot) error {
+func (data *TraceData) SetFinalSnapshot(bestHeight int32, snapshot *structure.Snapshot) error {
 	data.Snapshot = snapshot
 	gobCodec := common.NewCodecGob(nil)
 	rawData, err := gobCodec.Encode(snapshot)
 	if err != nil {
 		return err
 	}
-	Data(rawData)
+	Data(bestHeight, rawData)
 	return nil
 }
 

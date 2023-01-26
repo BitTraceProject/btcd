@@ -1329,8 +1329,9 @@ out:
 				msg.reply <- struct{}{}
 
 				{
+					// TODO 从 best snapshot 中获取更多的信息：BestState
 					finalSnapshot := bittrace.FinalSnapshot(traceData.Snapshot.ID, time.Now())
-					if err := traceData.SetFinalSnapshot(finalSnapshot); err != nil {
+					if err := traceData.SetFinalSnapshot(sm.chain.BestSnapshot().Height, finalSnapshot); err != nil {
 						bittrace.Error("%v", err)
 					}
 				}
@@ -1365,8 +1366,9 @@ out:
 				}
 
 				{
+					// TODO 从 best snapshot 中获取更多的信息：BestState
 					finalSnapshot := bittrace.FinalSnapshot(traceData.Snapshot.ID, time.Now())
-					if err := traceData.SetFinalSnapshot(finalSnapshot); err != nil {
+					if err := traceData.SetFinalSnapshot(sm.chain.BestSnapshot().Height, finalSnapshot); err != nil {
 						bittrace.Error("%v", err)
 					}
 				}

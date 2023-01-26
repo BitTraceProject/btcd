@@ -165,10 +165,10 @@ func (b *BlockChain) ProcessBlock(block *btcutil.Block, flags BehaviorFlags, tra
 		prevHash := &block.MsgBlock().Header.PrevBlock
 		prevNode := b.index.LookupNode(prevHash)
 
-		if prevNode.hash.IsEqual(&b.bestChain.Tip().hash) {
+		if prevNode.hash.IsEqual(&b.BestSnapshot().Hash) {
 			// 如果当前区块的前一个区块是 mainchain 的最优区块，则 forkHeight 直接赋值 0
 			forkHeight = 0
-			targetChainHeight = b.bestChain.Height() + 1
+			targetChainHeight = b.BestSnapshot().Height + 1
 		} else {
 			// 否则当前区块可能属于其他 sidechain，则 forkHeight 通过回溯计算
 			// 其他复杂情况的单独处理，如 prevBlock 不存在，prevBlock 是已知但是无效的
@@ -189,7 +189,8 @@ func (b *BlockChain) ProcessBlock(block *btcutil.Block, flags BehaviorFlags, tra
 		}
 		targetChainID = structure.GenChainID(forkHeight)
 		initSnapshot := bittrace.InitSnapshot(targetChainID, targetChainHeight, initTime)
-		if err := traceData.SetInitSnapshot(initSnapshot); err != nil {
+		// TODO 从 best snapshot 中获取更多的信息：BestState
+		if err := traceData.SetInitSnapshot(b.BestSnapshot().Height, initSnapshot); err != nil {
 			bittrace.Error("%v", err)
 		}
 

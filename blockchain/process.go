@@ -188,7 +188,18 @@ func (b *BlockChain) ProcessBlock(block *btcutil.Block, flags BehaviorFlags, tra
 			}
 		}
 		targetChainID = structure.GenChainID(forkHeight)
-		initSnapshot := bittrace.InitSnapshot(targetChainID, targetChainHeight, initTime, b.BestSnapshot())
+		bestState := b.BestSnapshot()
+		state := &structure.BestState{
+			Hash:            bestState.Hash.String(),
+			Height:          bestState.Height,
+			Bits:            bestState.Bits,
+			BlockSize:       bestState.BlockSize,
+			BlockWeight:     bestState.BlockWeight,
+			NumTxns:         bestState.NumTxns,
+			TotalTxns:       bestState.TotalTxns,
+			MedianTimestamp: structure.FromTime(bestState.MedianTime),
+		}
+		initSnapshot := bittrace.InitSnapshot(targetChainID, targetChainHeight, initTime, state)
 		// TODO 从 best snapshot 中获取更多的信息：BestState
 		if err := traceData.SetInitSnapshot(initSnapshot); err != nil {
 			bittrace.Error("%v", err)

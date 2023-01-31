@@ -6,6 +6,7 @@ package netsync
 
 import (
 	"container/list"
+	"github.com/BitTraceProject/BitTrace-Types/pkg/structure"
 	"math/rand"
 	"net"
 	"sync"
@@ -1329,7 +1330,18 @@ out:
 				msg.reply <- struct{}{}
 
 				{
-					finalSnapshot := bittrace.FinalSnapshot(traceData.Snapshot.ID, time.Now(), sm.chain.BestSnapshot())
+					bestState := sm.chain.BestSnapshot()
+					state := &structure.BestState{
+						Hash:            bestState.Hash.String(),
+						Height:          bestState.Height,
+						Bits:            bestState.Bits,
+						BlockSize:       bestState.BlockSize,
+						BlockWeight:     bestState.BlockWeight,
+						NumTxns:         bestState.NumTxns,
+						TotalTxns:       bestState.TotalTxns,
+						MedianTimestamp: structure.FromTime(bestState.MedianTime),
+					}
+					finalSnapshot := bittrace.FinalSnapshot(traceData.Snapshot.ID, time.Now(), state)
 					if err := traceData.SetFinalSnapshot(finalSnapshot); err != nil {
 						bittrace.Error("%v", err)
 					}
@@ -1365,7 +1377,18 @@ out:
 				}
 
 				{
-					finalSnapshot := bittrace.FinalSnapshot(traceData.Snapshot.ID, time.Now(), sm.chain.BestSnapshot())
+					bestState := sm.chain.BestSnapshot()
+					state := &structure.BestState{
+						Hash:            bestState.Hash.String(),
+						Height:          bestState.Height,
+						Bits:            bestState.Bits,
+						BlockSize:       bestState.BlockSize,
+						BlockWeight:     bestState.BlockWeight,
+						NumTxns:         bestState.NumTxns,
+						TotalTxns:       bestState.TotalTxns,
+						MedianTimestamp: structure.FromTime(bestState.MedianTime),
+					}
+					finalSnapshot := bittrace.FinalSnapshot(traceData.Snapshot.ID, time.Now(), state)
 					if err := traceData.SetFinalSnapshot(finalSnapshot); err != nil {
 						bittrace.Error("%v", err)
 					}

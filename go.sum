@@ -54,10 +54,10 @@ cloud.google.com/go/storage v1.8.0/go.mod h1:Wv1Oy7z6Yz3DshWRJFhqM/UCfaWIRTdp0RX
 cloud.google.com/go/storage v1.10.0/go.mod h1:FLPqc6j+Ki4BU591ie1oL6qBQGu2Bl/tZ9ullr3+Kg0=
 cloud.google.com/go/storage v1.14.0/go.mod h1:GrKmX003DSIwi9o29oFT7YDnHYwZoctc3fOKtUw0Xmo=
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
-github.com/BitTraceProject/BitTrace-Exporter v0.0.0-20230124082904-886c3e726e73 h1:s2ov9YlKN9lxLqmCq+zAMi+Nxermh43y0gsFtyxzdqs=
-github.com/BitTraceProject/BitTrace-Exporter v0.0.0-20230124082904-886c3e726e73/go.mod h1:ya2QLAS0Sj79m7MdpV0OrCEXOQcb8DeoOqAEGFIHVgI=
-github.com/BitTraceProject/BitTrace-Types v0.0.0-20230124075826-a012769a222f h1:LHdD6mhJb2lB1ryVwRJtgoTrT/iKuUon0PsZ6+GzY4M=
-github.com/BitTraceProject/BitTrace-Types v0.0.0-20230124075826-a012769a222f/go.mod h1:KvkgKxudAbBVEg02vclUjLgs2fjhJ2/IV9jGF8IwBRU=
+github.com/BitTraceProject/BitTrace-Exporter v0.0.0-20230131144458-44e59dfc21b1 h1:5xZ910VOQrKlMAwzwsrYvxkR4Xpsu8rdwxMuhdCL71Y=
+github.com/BitTraceProject/BitTrace-Exporter v0.0.0-20230131144458-44e59dfc21b1/go.mod h1:P/hmQCY67iDdUZfXBjm1EpKe2RNZcS9Le4ElOclwR5U=
+github.com/BitTraceProject/BitTrace-Types v0.0.0-20230131143952-55cb06552694 h1:yuHhl1nbb/wSHfwBLsCnCpJKYYqjqeaeLAaCRUC7UXU=
+github.com/BitTraceProject/BitTrace-Types v0.0.0-20230131143952-55cb06552694/go.mod h1:KvkgKxudAbBVEg02vclUjLgs2fjhJ2/IV9jGF8IwBRU=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/DataDog/datadog-go v3.2.0+incompatible/go.mod h1:LButxg5PwREeZtORoXG3tL4fMGNddJ+vMq1mwgfaqoQ=

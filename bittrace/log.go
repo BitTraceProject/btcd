@@ -7,6 +7,7 @@ import (
 	"github.com/BitTraceProject/BitTrace-Types/pkg/constants"
 	"github.com/BitTraceProject/BitTrace-Types/pkg/env"
 	"github.com/BitTraceProject/BitTrace-Types/pkg/structure"
+	"github.com/btcsuite/btclog"
 	"io"
 	"net/http"
 	"strconv"
@@ -20,6 +21,7 @@ var (
 	// logger 分离
 	prodLogger  common.Logger
 	debugLogger common.Logger
+	btcLogger   btclog.Logger
 	envPairs    = map[string]string{
 		"CONTAINER_NAME": "",
 	}
@@ -30,6 +32,11 @@ var (
 )
 
 func init() {
+	loggerName := envPairs["CONTAINER_NAME"]
+	prodLogger = common.GetLogger(loggerName)
+	debugLogger = common.GetLogger(loggerName + "_debug")
+	btcLogger = btclog.Disabled
+
 	err := env.LookupEnvPairs(&envPairs)
 	if err != nil {
 		panic(err)
@@ -38,13 +45,7 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-
-	// FOR TEST
-	targetHeight = 1024
-
-	loggerName := envPairs["CONTAINER_NAME"]
-	prodLogger = common.GetLogger(loggerName)
-	debugLogger = common.GetLogger(loggerName + "_debug")
+	btcLogger.Infof("[getNewTargetHeight]height=%d", targetHeight)
 
 	heightRWMux.Lock()
 	syncHeight = constants.LOG_SYNC_HEIGHT_INTERVAL // first sync height
@@ -62,8 +63,8 @@ func heartbeat() {
 		select {
 		case <-ticker.C:
 			targetChainID := structure.GenChainID(0)
-			// 所有字段除了 type 和 timestamp 都是空的
-			syncSnapshot := structure.NewSyncSnapshot(targetChainID, 0, time.Now(), "")
+			// 对于通过 day 定时同步的，所有字段除了 type 和 timestamp 都是空的，state 为 nil
+			syncSnapshot := structure.NewSyncSnapshot(targetChainID, 0, time.Now(), nil)
 			data, err := json.Marshal(syncSnapshot)
 			if err != nil {
 				debugLogger.Error("[heartbeat]json error:%v", err)
@@ -90,33 +91,33 @@ func getNewTargetHeight() (int32, error) {
 	return int32(height), nil
 }
 
-// Data TODO 添加 height 控制逻辑，根据 height 控制日志输出
-func Data(bestHeight int32, data []byte) {
+func Data(data []byte, bestState *structure.BestState) {
 	// 只在 btcd 处控制 height，如果没有达到 height，那么间隔一定的 height，
 	// 间隔一 day，向日志写入一个同步标志，其他的消息都忽略，直到达到 height
 	//（改 snapshot，btcd Data 函数添加逻辑，其他位置传递 best height，另外 btcd 添加参数 height）
 
-	if ok := dataSync(bestHeight); ok {
+	if ok := dataSync(bestState); ok {
 		// 到达了 target height
 		dataBase64 := base64.StdEncoding.EncodeToString(data)
 		prodLogger.Msg(dataBase64)
 	}
 }
 
-func dataSync(bestHeight int32) bool {
+func dataSync(bestState *structure.BestState) bool {
 	// 只在没到达 target height 前加锁，返回是否到达 target height，
 	// 并且如果没有达到 target height，完成到达 sync height 时同步，并且更新相关字段，
 	// 如果 sync height大于等于 target height，那么直接返回 true
-	if bestHeight >= targetHeight || syncHeight >= targetHeight {
+	if bestState.Height >= targetHeight || syncHeight >= targetHeight {
 		return true
 	}
 
 	heightRWMux.Lock()
 	defer heightRWMux.Unlock()
-	if bestHeight >= syncHeight {
+	if bestState.Height >= syncHeight {
 		// 到达了 syncHeight，同步
 		targetChainID := structure.GenChainID(0)
-		syncSnapshot := structure.NewSyncSnapshot(targetChainID, bestHeight, time.Now(), "")
+		// 对于通过 day 定时同步的，所有字段除了 type 和 timestamp 都是空的，state 为 nil
+		syncSnapshot := structure.NewSyncSnapshot(targetChainID, bestState.Height, time.Now(), bestState)
 		data, err := json.Marshal(syncSnapshot)
 		if err != nil {
 			debugLogger.Error("[heartbeat]json error:%v", err)

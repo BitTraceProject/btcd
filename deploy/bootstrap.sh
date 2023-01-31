@@ -33,7 +33,6 @@ function prepare() {
 }
 
 function bootstrap() {
-  # TODO 网络需要提前建立，cidr 这里就无所谓了
   infoln "up peer container"
   docker-compose up -d
 }

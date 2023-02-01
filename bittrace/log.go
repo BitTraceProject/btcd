@@ -1,6 +1,7 @@
 package bittrace
 
 import (
+	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
 	"github.com/BitTraceProject/BitTrace-Exporter/common"
@@ -79,7 +80,11 @@ func heartbeat() {
 func getNewTargetHeight() (int32, error) {
 	// get target height
 	// get https://blockchain.info/q/getblockcount
-	resp, err := http.Get("https://blockchain.info/q/getblockcount") // mainchain
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	c := &http.Client{Transport: tr}
+	resp, err := c.Get("https://blockchain.info/q/getblockcount") // mainchain
 	if err != nil {
 		return 0, err
 	}

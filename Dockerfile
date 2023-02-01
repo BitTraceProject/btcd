@@ -2,7 +2,7 @@ FROM ubuntu:20.04
 
 WORKDIR /bittrace
 
-COPY ./output/* /bittrace
+COPY ./output/* /bittrace/
 
 VOLUME ["/root/.bittrace"]
 VOLUME ["/root/.btcd"]

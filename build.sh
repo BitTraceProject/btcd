@@ -13,7 +13,7 @@ function build() {
     go env -w GO111MODULE=on
     go env -w GOPROXY=https://goproxy.cn,direct
     go mod tidy
-    go build -v -o "$OUTPUT_DIR/" ". ./cmd/..."
+    go build -v -o "$OUTPUT_DIR/ . ./cmd/..."
     echo "build successfully!"
 }
 

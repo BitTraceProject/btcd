@@ -8,7 +8,6 @@ import (
 	"github.com/BitTraceProject/BitTrace-Types/pkg/constants"
 	"github.com/BitTraceProject/BitTrace-Types/pkg/env"
 	"github.com/BitTraceProject/BitTrace-Types/pkg/structure"
-	"github.com/btcsuite/btclog"
 	"io"
 	"net/http"
 	"strconv"
@@ -22,7 +21,6 @@ var (
 	// logger 分离
 	prodLogger  common.Logger
 	debugLogger common.Logger
-	btcLogger   btclog.Logger
 	envPairs    = map[string]string{
 		"CONTAINER_NAME": "",
 	}
@@ -36,7 +34,6 @@ func init() {
 	loggerName := envPairs["CONTAINER_NAME"]
 	prodLogger = common.GetLogger(loggerName)
 	debugLogger = common.GetLogger(loggerName + "_debug")
-	btcLogger = btclog.Disabled
 
 	err := env.LookupEnvPairs(&envPairs)
 	if err != nil {
@@ -46,7 +43,7 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	btcLogger.Infof("[getNewTargetHeight]height=%d", targetHeight)
+	debugLogger.Info("[getNewTargetHeight]height=%d", targetHeight)
 
 	heightRWMux.Lock()
 	syncHeight = constants.LOG_SYNC_HEIGHT_INTERVAL // first sync height

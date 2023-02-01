@@ -5,14 +5,6 @@ peer_dir=${pwd}/peers
 tmpl_dir=${pwd}/tmpl
 temp_dir=${pwd}/.temp
 
-RESTART_FLAG=$1
-
-source ./clean.sh
-
-function precheck() {
-  docker restart ${CONTAINER_NAME}
-}
-
 function precheck() {
   if [ ! -f "${tmpl_dir}/.env.tmpl" ]; then
     exitWithError ".env tmpl not prepare"
@@ -58,11 +50,6 @@ function exitWithError() {
 
 function main() {
   set -x
-  if [ "$RESTART_FLAG" != "" ]; then
-    echo "[RESTART]${CONTAINER_NAME}"
-    restart
-    exit 0
-  fi
   infoln "precheck process"
   precheck
 

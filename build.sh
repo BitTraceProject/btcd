@@ -8,7 +8,7 @@ CONTAINER_NAME=$1 # 不为空代表 rebuild，其余情况都是 build
 
 function build() {
     set -o errexit
-    mkdir $OUTPUT_DIR
+    mkdir -p $OUTPUT_DIR
     export GO111MODULE=on
     go env -w GO111MODULE=on
     go env -w GOPROXY=https://goproxy.cn,direct

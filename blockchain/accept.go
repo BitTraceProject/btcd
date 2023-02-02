@@ -6,9 +6,10 @@ package blockchain
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/BitTraceProject/BitTrace-Types/pkg/structure"
 	"github.com/btcsuite/btcd/bittrace"
-	"time"
 
 	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/database"
@@ -26,7 +27,7 @@ import (
 //
 // This function MUST be called with the chain state lock held (for writes).
 func (b *BlockChain) maybeAcceptBlock(block *btcutil.Block, flags BehaviorFlags, traceData *bittrace.TraceData) (bool, error) {
-	var chainVerifyRevision = structure.NewRevision(structure.RevisionTypeChainVerify, traceData.Snapshot.ID, structure.RevisionDataChainVerify{})
+	var chainVerifyRevision = structure.NewRevision(structure.RevisionTypeChainVerify, traceData.GetSnapshotID(), structure.RevisionDataChainVerify{})
 
 	// The height of this block is one more than the referenced previous
 	// block.

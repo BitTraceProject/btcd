@@ -6,14 +6,15 @@ package netsync
 
 import (
 	"container/list"
-	"github.com/BitTraceProject/BitTrace-Types/pkg/structure"
 	"math/rand"
 	"net"
 	"sync"
 	"sync/atomic"
 	"time"
 
+	"github.com/BitTraceProject/BitTrace-Types/pkg/structure"
 	"github.com/btcsuite/btcd/bittrace"
+	
 	"github.com/btcsuite/btcd/blockchain"
 	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/chaincfg"
@@ -1341,8 +1342,7 @@ out:
 						TotalTxns:       bestState.TotalTxns,
 						MedianTimestamp: structure.FromTime(bestState.MedianTime),
 					}
-					finalSnapshot := bittrace.FinalSnapshot(traceData.Snapshot.ID, time.Now(), state)
-					if err := traceData.SetFinalSnapshot(finalSnapshot); err != nil {
+					if err := traceData.SetFinalSnapshot(time.Now(), state); err != nil {
 						bittrace.Error("%v", err)
 					}
 				}
@@ -1388,8 +1388,7 @@ out:
 						TotalTxns:       bestState.TotalTxns,
 						MedianTimestamp: structure.FromTime(bestState.MedianTime),
 					}
-					finalSnapshot := bittrace.FinalSnapshot(traceData.Snapshot.ID, time.Now(), state)
-					if err := traceData.SetFinalSnapshot(finalSnapshot); err != nil {
+					if err := traceData.SetFinalSnapshot(time.Now(), state); err != nil {
 						bittrace.Error("%v", err)
 					}
 				}

@@ -13,13 +13,6 @@ logs/
 *.zip
 *.7z
 
-# executable binary file
-bitlog-cli
-bitlog-cli.exe
-
-# output
-output/
-
 # env vars
 .env
 

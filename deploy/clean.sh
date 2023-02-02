@@ -16,4 +16,4 @@ function clean() {
     echo "rm -rf ${log_dir}/${CONTAINER_NAME}"
 }
 
-clean $1
+clean "$1"

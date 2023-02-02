@@ -1,5 +1,6 @@
 #!/bin/bash
 
+DEPLOY_PWD=$PWD
 pwd=/root/.bittrace
 peer_dir=${pwd}/peers
 tmpl_dir=${pwd}/tmpl
@@ -30,6 +31,10 @@ function prepare() {
   mkdir "${temp_dir}"
 }
 
+function build() {
+      bash "$DEPLOY_PWD"/../build.sh
+}
+
 function bootstrap() {
   infoln "up peer container"
   docker-compose up -d
@@ -39,7 +44,6 @@ function exitWithError() {
   errorMsg=$1
   if [ -n "${errorMsg}" ]; then
     errorln "${errorMsg}"
-    clean ${CONTAINER_NAME}
   fi
   if [ -d "${temp_dir}" ]; then
     infoln "clean temp files"
@@ -73,6 +77,9 @@ function main() {
   cd "${peer_dir}/${CONTAINER_NAME}" || exit
   source .env
 
+  infoln "build container"
+  build
+
   infoln "bootstrap peer"
   bootstrap
 
@@ -82,11 +89,11 @@ function main() {
 }
 
 function infoln() {
-    echo "===[info]: ${1}"
+    echo "==[info]: ${1}"
 }
 
 function errorln() {
-    echo "===[error]: ${1}"
+    echo "==[error]: ${1}"
 }
 
 main

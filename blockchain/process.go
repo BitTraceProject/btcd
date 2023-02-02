@@ -10,6 +10,7 @@ import (
 
 	"github.com/BitTraceProject/BitTrace-Types/pkg/structure"
 	"github.com/btcsuite/btcd/bittrace"
+
 	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/database"
@@ -84,7 +85,7 @@ func (b *BlockChain) blockExists(hash *chainhash.Hash) (bool, error) {
 //
 // This function MUST be called with the chain state lock held (for writes).
 func (b *BlockChain) processOrphans(hash *chainhash.Hash, flags BehaviorFlags, traceData *bittrace.TraceData) error {
-	var orphanProcessRevision = structure.NewRevision(structure.RevisionTypeOrphanProcess, traceData.Snapshot.ID, structure.RevisionDataOrphanProcess{})
+	var orphanProcessRevision = structure.NewRevision(structure.RevisionTypeOrphanProcess, traceData.GetSnapshotID(), structure.RevisionDataOrphanProcess{})
 
 	// Start with processing at least the passed hash.  Leave a little room
 	// for additional orphan blocks that need to be processed without
@@ -199,18 +200,16 @@ func (b *BlockChain) ProcessBlock(block *btcutil.Block, flags BehaviorFlags, tra
 			TotalTxns:       bestState.TotalTxns,
 			MedianTimestamp: structure.FromTime(bestState.MedianTime),
 		}
-		initSnapshot := bittrace.InitSnapshot(targetChainID, targetChainHeight, initTime, state)
-		// TODO 从 best snapshot 中获取更多的信息：BestState
-		if err := traceData.SetInitSnapshot(initSnapshot); err != nil {
+		if err := traceData.SetInitSnapshot(targetChainID, targetChainHeight, initTime, state); err != nil {
 			bittrace.Error("%v", err)
 		}
 
-		var receiveBlockRevision = structure.NewRevision(structure.RevisionTypeBlockReceive, initSnapshot.ID, structure.RevisionDataBlockReceive{})
+		var receiveBlockRevision = structure.NewRevision(structure.RevisionTypeBlockReceive, traceData.GetSnapshotID(), structure.RevisionDataBlockReceive{})
 		// no status change, so no event and result
 		traceData.CommitRevision(receiveBlockRevision, time.Now(), "success")
 	}
 
-	var blockVerifyRevision = structure.NewRevision(structure.RevisionTypeBlockVerify, traceData.Snapshot.ID, structure.RevisionDataBlockVerify{})
+	var blockVerifyRevision = structure.NewRevision(structure.RevisionTypeBlockVerify, traceData.GetSnapshotID(), structure.RevisionDataBlockVerify{})
 	// TODO 所有中途 return 都需要处理 revision
 
 	fastAdd := flags&BFFastAdd == BFFastAdd

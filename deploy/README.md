@@ -7,12 +7,6 @@ git clone https://github.com/BitTraceProject/btcd.git
 cd btcd 
 ```
 
-## build docker container
-
-```shell
-bash build.sh
-```
-
 ## modify tmpl files with the help of comments, note that the docker-compose tmpl file don't need to modify
 
 ```shell
@@ -24,8 +18,14 @@ nano ${tmpl_dir}/.env.tmpl ## modify
 nano ${tmpl_dir}/btcd.conf.tmpl ## modify
 ```
 
-## run bootstrap.sh
+## bootstrap or restart container
 
 ```shell
 bash bootstrap.sh
+```
+
+or
+
+```shell
+bash restart.sh ${CONTAINER_NAME}
 ```

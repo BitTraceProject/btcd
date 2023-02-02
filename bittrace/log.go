@@ -4,15 +4,16 @@ import (
 	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
-	"github.com/BitTraceProject/BitTrace-Exporter/common"
-	"github.com/BitTraceProject/BitTrace-Types/pkg/constants"
-	"github.com/BitTraceProject/BitTrace-Types/pkg/env"
-	"github.com/BitTraceProject/BitTrace-Types/pkg/structure"
 	"io"
 	"net/http"
 	"strconv"
 	"sync"
 	"time"
+
+	"github.com/BitTraceProject/BitTrace-Exporter/common"
+	"github.com/BitTraceProject/BitTrace-Types/pkg/constants"
+	"github.com/BitTraceProject/BitTrace-Types/pkg/env"
+	"github.com/BitTraceProject/BitTrace-Types/pkg/structure"
 )
 
 // 初始化 logger
@@ -94,10 +95,6 @@ func getNewTargetHeight() (int32, error) {
 }
 
 func Data(data []byte, bestState *structure.BestState) {
-	// 只在 btcd 处控制 height，如果没有达到 height，那么间隔一定的 height，
-	// 间隔一 day，向日志写入一个同步标志，其他的消息都忽略，直到达到 height
-	//（改 snapshot，btcd Data 函数添加逻辑，其他位置传递 best height，另外 btcd 添加参数 height）
-
 	if ok := dataSync(bestState); ok {
 		// 到达了 target height
 		dataBase64 := base64.StdEncoding.EncodeToString(data)
@@ -118,16 +115,15 @@ func dataSync(bestState *structure.BestState) bool {
 	if bestState.Height >= syncHeight {
 		// 到达了 syncHeight，同步
 		targetChainID := structure.GenChainID(0)
-		// 对于通过 day 定时同步的，所有字段除了 type 和 timestamp 都是空的，state 为 nil
+		// 对于通过 height 间隔同步的，所有字段都是正常的，state 也不为 nil
 		syncSnapshot := structure.NewSyncSnapshot(targetChainID, bestState.Height, time.Now(), bestState)
 		data, err := json.Marshal(syncSnapshot)
 		if err != nil {
-			debugLogger.Error("[heartbeat]json error:%v", err)
+			debugLogger.Error("[dataSync]json error:%v", err)
 		} else {
 			dataBase64 := base64.StdEncoding.EncodeToString(data)
 			prodLogger.Msg(dataBase64)
 		}
-
 		syncHeight += constants.LOG_SYNC_HEIGHT_INTERVAL
 	}
 	return false

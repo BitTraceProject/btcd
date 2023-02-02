@@ -4,9 +4,11 @@ CONTAINER_NAME=$1
 DEPLOY_PWD=$PWD
 
 function restart() {
-  bash "$DEPLOY_PWD"/../build.sh "$CONTAINER_NAME"
-  if [ "$RESTART_FLAG" != "" ]; then
-    echo "[RESTART]$CONTAINER_NAME"
+  # cp 会直接覆盖旧的
+  cd $DEPLOY_PWD/.. || exit
+  if [ "$CONTAINER_NAME" != "" ]; then
+    echo "rebuild and restart"
+    docker cp ${OUTPUT_DIR}/btcd "${CONTAINER_NAME}":/bittrace/
     docker restart "$CONTAINER_NAME"
     exit 0
   else

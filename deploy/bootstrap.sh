@@ -32,7 +32,10 @@ function prepare() {
 }
 
 function build() {
-      bash "$DEPLOY_PWD"/../build.sh
+  cd $DEPLOY_PWD/.. || exit
+  bash build.sh
+  docker build . -t bittrace/peer_btcd
+  echo "build container successfully!"
 }
 
 function bootstrap() {

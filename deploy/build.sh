@@ -1,7 +1,8 @@
 #!/bin/bash
 
+DEPLOY_PWD=$PWD
 export GOOS="linux" # windows darwin linux
-export OUTPUT_DIR="./output"
+export OUTPUT_DIR="$DEPLOY_PWD/../output"
 export PACKAGE_NAME="btcd"
 
 CONTAINER_NAME=$1 # 不为空代表 rebuild，其余情况都是 build
@@ -31,6 +32,8 @@ function rebuildContainer() {
   docker cp ${OUTPUT_DIR}/btcd "${CONTAINER_NAME}":/bittrace/
   echo "rebuild container successfully!"
 }
+
+cd $DEPLOY_PWD/..
 
 if [ "$CONTAINER_NAME" != "" ]; then
   echo "[REBUILD]${CONTAINER_NAME}"

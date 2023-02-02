@@ -89,7 +89,6 @@ function main() {
 
   rm -rf "${temp_dir}"
   infoln "bootstrap success"
-  exitWithError
 }
 
 function infoln() {

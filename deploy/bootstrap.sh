@@ -40,6 +40,7 @@ function build() {
 
 function bootstrap() {
   infoln "up peer container"
+  cd "${peer_dir}/${CONTAINER_NAME}" || exit
   docker-compose up -d
 }
 

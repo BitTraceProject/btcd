@@ -32,14 +32,14 @@ var (
 )
 
 func init() {
-	loggerName := envPairs["CONTAINER_NAME"]
-	prodLogger = common.GetLogger(loggerName)
-	debugLogger = common.GetLogger(loggerName + "_debug")
-
 	err := env.LookupEnvPairs(&envPairs)
 	if err != nil {
 		panic(err)
 	}
+	loggerName := envPairs["CONTAINER_NAME"]
+	prodLogger = common.GetLogger(loggerName)
+	debugLogger = common.GetLogger(loggerName + "_debug")
+
 	targetHeight, err = getNewTargetHeight()
 	if err != nil {
 		panic(err)

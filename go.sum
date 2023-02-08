@@ -54,8 +54,8 @@ cloud.google.com/go/storage v1.8.0/go.mod h1:Wv1Oy7z6Yz3DshWRJFhqM/UCfaWIRTdp0RX
 cloud.google.com/go/storage v1.10.0/go.mod h1:FLPqc6j+Ki4BU591ie1oL6qBQGu2Bl/tZ9ullr3+Kg0=
 cloud.google.com/go/storage v1.14.0/go.mod h1:GrKmX003DSIwi9o29oFT7YDnHYwZoctc3fOKtUw0Xmo=
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
-github.com/BitTraceProject/BitTrace-Types v0.0.0-20230208142050-68a8aabdd369 h1:UlPhrGRObU1mQY3EHkM6LlsOJ3PDWi7KmWdKX8+spAk=
-github.com/BitTraceProject/BitTrace-Types v0.0.0-20230208142050-68a8aabdd369/go.mod h1:Cj2LSl7rEpBcfLl/euvNjym4W11x2SZkuZ69Wgt5X+4=
+github.com/BitTraceProject/BitTrace-Types v0.0.0-20230208155536-c88d5e056bfd h1:6UQAaXIUTdtqpyh+MLFlSsWq9ZT1tJDHvs0+EfFZYZM=
+github.com/BitTraceProject/BitTrace-Types v0.0.0-20230208155536-c88d5e056bfd/go.mod h1:Cj2LSl7rEpBcfLl/euvNjym4W11x2SZkuZ69Wgt5X+4=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/DataDog/datadog-go v3.2.0+incompatible/go.mod h1:LButxg5PwREeZtORoXG3tL4fMGNddJ+vMq1mwgfaqoQ=

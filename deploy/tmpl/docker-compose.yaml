@@ -20,6 +20,7 @@ services:
       service: peer_btcd_service
     environment: # 通过环境变量设置常量，也可以不使用这里的
       - CONTAINER_NAME=${CONTAINER_NAME:-peer0.btcd.testnet0}
+      - TARGET_HEIGHT=${TARGET_HEIGHT:-} # 默认为空
       - BITTRACE_ROOT_DIR=/root/.bittrace
       - BITTRACE_CLIENT_DIR=peers
       - BITTRACE_LOG_DIR=logfiles

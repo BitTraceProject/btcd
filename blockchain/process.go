@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/BitTraceProject/BitTrace-Types/pkg/common"
 	"github.com/BitTraceProject/BitTrace-Types/pkg/structure"
 	"github.com/btcsuite/btcd/bittrace"
 
@@ -188,7 +189,7 @@ func (b *BlockChain) ProcessBlock(block *btcutil.Block, flags BehaviorFlags, tra
 				targetChainHeight = prevNode.height + 1
 			}
 		}
-		targetChainID = structure.GenChainID(forkHeight)
+		targetChainID = common.GenChainID(forkHeight)
 		bestState := b.BestSnapshot()
 		state := &structure.BestState{
 			Hash:            bestState.Hash.String(),
@@ -198,7 +199,7 @@ func (b *BlockChain) ProcessBlock(block *btcutil.Block, flags BehaviorFlags, tra
 			BlockWeight:     bestState.BlockWeight,
 			NumTxns:         bestState.NumTxns,
 			TotalTxns:       bestState.TotalTxns,
-			MedianTimestamp: structure.FromTime(bestState.MedianTime),
+			MedianTimestamp: common.FromTime(bestState.MedianTime),
 		}
 		if err := traceData.SetInitSnapshot(targetChainID, targetChainHeight, initTime, state); err != nil {
 			bittrace.Error("%v", err)

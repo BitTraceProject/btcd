@@ -12,9 +12,10 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/BitTraceProject/BitTrace-Types/pkg/common"
 	"github.com/BitTraceProject/BitTrace-Types/pkg/structure"
 	"github.com/btcsuite/btcd/bittrace"
-	
+
 	"github.com/btcsuite/btcd/blockchain"
 	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/chaincfg"
@@ -1340,7 +1341,7 @@ out:
 						BlockWeight:     bestState.BlockWeight,
 						NumTxns:         bestState.NumTxns,
 						TotalTxns:       bestState.TotalTxns,
-						MedianTimestamp: structure.FromTime(bestState.MedianTime),
+						MedianTimestamp: common.FromTime(bestState.MedianTime),
 					}
 					if err := traceData.SetFinalSnapshot(time.Now(), state); err != nil {
 						bittrace.Error("%v", err)
@@ -1386,7 +1387,7 @@ out:
 						BlockWeight:     bestState.BlockWeight,
 						NumTxns:         bestState.NumTxns,
 						TotalTxns:       bestState.TotalTxns,
-						MedianTimestamp: structure.FromTime(bestState.MedianTime),
+						MedianTimestamp: common.FromTime(bestState.MedianTime),
 					}
 					if err := traceData.SetFinalSnapshot(time.Now(), state); err != nil {
 						bittrace.Error("%v", err)

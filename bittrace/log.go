@@ -10,9 +10,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/BitTraceProject/BitTrace-Exporter/common"
+	"github.com/BitTraceProject/BitTrace-Types/pkg/common"
 	"github.com/BitTraceProject/BitTrace-Types/pkg/constants"
-	"github.com/BitTraceProject/BitTrace-Types/pkg/env"
+	"github.com/BitTraceProject/BitTrace-Types/pkg/logger"
 	"github.com/BitTraceProject/BitTrace-Types/pkg/structure"
 )
 
@@ -20,10 +20,11 @@ import (
 
 var (
 	// logger 分离
-	prodLogger  common.Logger
-	debugLogger common.Logger
+	prodLogger  logger.Logger
+	debugLogger logger.Logger
 	envPairs    = map[string]string{
 		"CONTAINER_NAME": "",
+		"TARGET_HEIGHT":  "",
 	}
 	targetHeight = int32(0)
 
@@ -32,22 +33,31 @@ var (
 )
 
 func init() {
-	err := env.LookupEnvPairs(&envPairs)
-	if err != nil {
-		panic(err)
+	common.LookupEnvPairs(&envPairs)
+	if envPairs["CONTAINER_NAME"] == "" {
+		panic("lookup env CONTAINER_NAME failed")
 	}
 	loggerName := envPairs["CONTAINER_NAME"]
-	prodLogger = common.GetLogger(loggerName)
-	debugLogger = common.GetLogger(loggerName + "_debug")
+	prodLogger = logger.GetLogger(loggerName)
+	debugLogger = logger.GetLogger(loggerName + "_debug")
 
-	targetHeight, err = getNewTargetHeight()
-	if err != nil {
-		panic(err)
+	var err error
+	if envPairs["TARGET_HEIGHT"] == "" {
+		targetHeight, err = getNewTargetHeight()
+		if err != nil {
+			panic(err)
+		}
+	} else {
+		targetHeight64, err := strconv.ParseInt(envPairs["TARGET_HEIGHT"], 10, 32)
+		if err != nil {
+			panic(err)
+		}
+		targetHeight = int32(targetHeight64)
 	}
 	debugLogger.Info("[getNewTargetHeight]height=%d", targetHeight)
 
 	heightRWMux.Lock()
-	syncHeight = constants.LOG_SYNC_HEIGHT_INTERVAL // first sync height
+	syncHeight = constants.LOGGER_SYNC_HEIGHT_INTERVAL // first sync height
 	heightRWMux.Unlock()
 
 	go heartbeat()
@@ -61,7 +71,7 @@ func heartbeat() {
 	for {
 		select {
 		case <-ticker.C:
-			targetChainID := structure.GenChainID(0)
+			targetChainID := common.GenChainID(0)
 			// 对于通过 day 定时同步的，所有字段除了 type 和 timestamp 都是空的，state 为 nil
 			syncSnapshot := structure.NewSyncSnapshot(targetChainID, 0, time.Now(), nil)
 			data, err := json.Marshal(syncSnapshot)
@@ -114,7 +124,7 @@ func dataSync(bestState *structure.BestState) bool {
 	defer heightRWMux.Unlock()
 	if bestState.Height >= syncHeight {
 		// 到达了 syncHeight，同步
-		targetChainID := structure.GenChainID(0)
+		targetChainID := common.GenChainID(0)
 		// 对于通过 height 间隔同步的，所有字段都是正常的，state 也不为 nil
 		syncSnapshot := structure.NewSyncSnapshot(targetChainID, bestState.Height, time.Now(), bestState)
 		data, err := json.Marshal(syncSnapshot)
@@ -124,7 +134,7 @@ func dataSync(bestState *structure.BestState) bool {
 			dataBase64 := base64.StdEncoding.EncodeToString(data)
 			prodLogger.Msg(dataBase64)
 		}
-		syncHeight += constants.LOG_SYNC_HEIGHT_INTERVAL
+		syncHeight += constants.LOGGER_SYNC_HEIGHT_INTERVAL
 	}
 	return false
 }

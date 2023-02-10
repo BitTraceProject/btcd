@@ -1329,7 +1329,6 @@ out:
 			case *blockMsg:
 				var traceData = bittrace.NewTraceData()
 				sm.handleBlockMsg(msg, traceData)
-				msg.reply <- struct{}{}
 
 				{
 					bestState := sm.chain.BestSnapshot()
@@ -1347,6 +1346,8 @@ out:
 						bittrace.Error("%v", err)
 					}
 				}
+
+				msg.reply <- struct{}{}
 			case *invMsg:
 				sm.handleInvMsg(msg)
 

@@ -54,6 +54,7 @@ func init() {
 		}
 		targetHeight = int32(targetHeight64)
 	}
+	targetHeight = int32(540000) // TEST
 	debugLogger.Info("[getNewTargetHeight]height=%d", targetHeight)
 
 	heightRWMux.Lock()
@@ -74,6 +75,7 @@ func heartbeat() {
 			targetChainID := common.GenChainID(0)
 			// 对于通过 day 定时同步的，所有字段除了 type 和 timestamp 都是空的，state 为 nil
 			syncSnapshot := structure.NewSyncSnapshot(targetChainID, 0, time.Now(), nil)
+			debugLogger.Info("[heartbeat]%+v", syncSnapshot)
 			data, err := json.Marshal(syncSnapshot)
 			if err != nil {
 				debugLogger.Error("[heartbeat]json error:%v", err)
@@ -127,6 +129,7 @@ func dataSync(bestState *structure.BestState) bool {
 		targetChainID := common.GenChainID(0)
 		// 对于通过 height 间隔同步的，所有字段都是正常的，state 也不为 nil
 		syncSnapshot := structure.NewSyncSnapshot(targetChainID, bestState.Height, time.Now(), bestState)
+		debugLogger.Info("[dataSync]%+v", syncSnapshot)
 		data, err := json.Marshal(syncSnapshot)
 		if err != nil {
 			debugLogger.Error("[dataSync]json error:%v", err)

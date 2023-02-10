@@ -21,6 +21,7 @@ func NewTraceData() *TraceData {
 
 func (data *TraceData) SetInitSnapshot(targetChainID string, targetChainHeight int32, initTime time.Time, bestState *structure.BestState) error {
 	snapshot := structure.NewInitSnapshot(targetChainID, targetChainHeight, initTime, bestState)
+	debugLogger.Info("[SetInitSnapshot]%+v", snapshot)
 	data.initSnapshot = snapshot
 	rawData, err := json.Marshal(snapshot)
 	if err != nil {
@@ -32,6 +33,7 @@ func (data *TraceData) SetInitSnapshot(targetChainID string, targetChainHeight i
 
 func (data *TraceData) SetFinalSnapshot(finalTime time.Time, bestState *structure.BestState) error {
 	snapshot := data.initSnapshot.Commit(finalTime, bestState)
+	debugLogger.Info("[SetFinalSnapshot]%+v", snapshot)
 	data.finalSnapshot = snapshot
 	rawData, err := json.Marshal(snapshot)
 	if err != nil {

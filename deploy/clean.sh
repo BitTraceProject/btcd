@@ -1,10 +1,11 @@
 #!/bin/bash
 
+CONTAINER_NAME=$1
+
 function clean() {
     pwd=/root/.bittrace
     peer_dir=${pwd}/peers
     log_dir=${pwd}/logfiles
-    CONTAINER_NAME=$1
     source ${peer_dir}/${CONTAINER_NAME}/.env
     docker stop ${CONTAINER_NAME}
     echo "stop ${CONTAINER_NAME}"
@@ -16,4 +17,4 @@ function clean() {
     echo "rm -rf ${log_dir}/${CONTAINER_NAME}"
 }
 
-clean "$1"
+clean

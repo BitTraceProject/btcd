@@ -54,7 +54,6 @@ func init() {
 		}
 		targetHeight = int32(targetHeight64)
 	}
-	targetHeight = int32(540000) // TEST
 	debugLogger.Info("[getNewTargetHeight]height=%d", targetHeight)
 
 	heightRWMux.Lock()

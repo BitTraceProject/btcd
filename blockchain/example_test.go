@@ -11,10 +11,10 @@ import (
 	"path/filepath"
 
 	"github.com/btcsuite/btcd/blockchain"
+	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/database"
 	_ "github.com/btcsuite/btcd/database/ffldb"
-	"github.com/btcsuite/btcd/btcutil"
 )
 
 // This example demonstrates how to create a new chain instance and use
@@ -60,7 +60,7 @@ func ExampleBlockChain_ProcessBlock() {
 	// exists.
 	genesisBlock := btcutil.NewBlock(chaincfg.MainNetParams.GenesisBlock)
 	isMainChain, isOrphan, err := chain.ProcessBlock(genesisBlock,
-		blockchain.BFNone)
+		blockchain.BFNone, nil, "")
 	if err != nil {
 		fmt.Printf("Failed to process block: %v\n", err)
 		return

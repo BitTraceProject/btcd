@@ -19,8 +19,8 @@ func NewTraceData() *TraceData {
 	}
 }
 
-func (data *TraceData) SetInitSnapshot(targetChainID string, targetChainHeight int32, initTime time.Time, bestState *structure.BestState) error {
-	snapshot := structure.NewInitSnapshot(targetChainID, targetChainHeight, initTime, bestState)
+func (data *TraceData) SetInitSnapshot(targetChainID string, targetChainHeight int32, initTime time.Time, blockHash string, bestState *structure.BestState) error {
+	snapshot := structure.NewInitSnapshot(targetChainID, targetChainHeight, initTime, blockHash, bestState)
 	debugLogger.Info("[SetInitSnapshot]%+v", snapshot)
 	data.initSnapshot = snapshot
 	rawData, err := json.Marshal(snapshot)
@@ -29,6 +29,16 @@ func (data *TraceData) SetInitSnapshot(targetChainID string, targetChainHeight i
 	}
 	Data(rawData, bestState)
 	return nil
+}
+
+func (data *TraceData) CommitEventOrphan(t structure.EventType, blockHash string, connectMainChain bool) {
+	eventOrphan := structure.NewEventOrphan(t, data.GetSnapshotID(), blockHash, connectMainChain)
+	data.initSnapshot.CommitOrphanEvent(eventOrphan)
+}
+
+func (data *TraceData) CommitRevision(revision *structure.Revision, commitTime time.Time, revisionData structure.RevisionData) {
+	revision.Commit(commitTime, revisionData)
+	data.initSnapshot.CommitRevision(revision)
 }
 
 func (data *TraceData) SetFinalSnapshot(finalTime time.Time, bestState *structure.BestState) error {
@@ -41,11 +51,6 @@ func (data *TraceData) SetFinalSnapshot(finalTime time.Time, bestState *structur
 	}
 	Data(rawData, bestState)
 	return nil
-}
-
-func (data *TraceData) CommitRevision(revision *structure.Revision, commitTime time.Time, revisionData structure.RevisionData) {
-	revision.Commit(commitTime, revisionData)
-	data.initSnapshot.CommitRevision(revision)
 }
 
 func (data *TraceData) GetInitSnapshot() *structure.Snapshot {

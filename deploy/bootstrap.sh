@@ -21,7 +21,7 @@ function precheck() {
     exitWithError "peer name not set, please set"
   fi
   if [ -d "${peer_dir}/${CONTAINER_NAME}" ]; then
-    exitWithError "peer container dir has existed, please rm or rename peer"
+    infoln "[WARNING]:peer container dir has existed, please rm or rename peer"
   fi
 }
 

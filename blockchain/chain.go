@@ -288,11 +288,12 @@ func (b *BlockChain) removeOrphanBlock(orphan *orphanBlock) {
 // blocks and will remove the oldest received orphan block if the limit is
 // exceeded.
 func (b *BlockChain) addOrphanBlock(block *btcutil.Block, traceData *bittrace.TraceData) {
-	var orphanExtendRevision = structure.NewRevision(structure.RevisionTypeOrphanExtend, traceData.GetSnapshotID(), structure.RevisionDataOrphanExtend{})
+	var orphanExtendRevision = structure.NewRevision(structure.RevisionTypeOrphanExtend, traceData.GetSnapshotID(), structure.RevisionDataOrphanExtendInit{})
 
 	// Remove expired orphan blocks.
 	for _, oBlock := range b.orphans {
 		if time.Now().After(oBlock.expiration) {
+			traceData.CommitEventOrphan(structure.EventTypeOrphanDiscard, oBlock.block.Hash().String(), false)
 			b.removeOrphanBlock(oBlock)
 			continue
 		}
@@ -307,6 +308,7 @@ func (b *BlockChain) addOrphanBlock(block *btcutil.Block, traceData *bittrace.Tr
 	// Limit orphan blocks to prevent memory exhaustion.
 	if len(b.orphans)+1 > maxOrphanBlocks {
 		// Remove the oldest orphan to make room for the new one.
+		traceData.CommitEventOrphan(structure.EventTypeOrphanDiscard, b.oldestOrphan.block.Hash().String(), false)
 		b.removeOrphanBlock(b.oldestOrphan)
 		b.oldestOrphan = nil
 	}
@@ -329,8 +331,8 @@ func (b *BlockChain) addOrphanBlock(block *btcutil.Block, traceData *bittrace.Tr
 	// Add to previous hash lookup index for faster dependency lookups.
 	prevHash := &block.MsgBlock().Header.PrevBlock
 	b.prevOrphans[*prevHash] = append(b.prevOrphans[*prevHash], oBlock)
-
-	traceData.CommitRevision(orphanExtendRevision, time.Now(), "success")
+	traceData.CommitEventOrphan(structure.EventTypeOrphanHappen, oBlock.block.Hash().String(), false)
+	traceData.CommitRevision(orphanExtendRevision, time.Now(), structure.RevisionDataOrphanExtendFinal{})
 }
 
 // SequenceLock represents the converted relative lock-time in seconds, and
@@ -566,18 +568,25 @@ func (b *BlockChain) getReorganizeNodes(node *blockNode) (*list.List, *list.List
 // This function MUST be called with the chain state lock held (for writes).
 func (b *BlockChain) connectBlock(node *blockNode, block *btcutil.Block,
 	view *UtxoViewpoint, stxos []SpentTxOut, traceData *bittrace.TraceData) error {
-	var mainchainExtendRevision = structure.NewRevision(structure.RevisionTypeMainChainExtend, traceData.GetSnapshotID(), structure.RevisionDataMainChainExtend{})
+	var mainChainExtendRevision = structure.NewRevision(structure.RevisionTypeMainChainExtend, traceData.GetSnapshotID(), structure.RevisionDataMainChainExtendInit{
+		BlockHash: node.hash.String(),
+	})
 
 	// Make sure it's extending the end of the best chain.
 	prevHash := &block.MsgBlock().Header.PrevBlock
 	if !prevHash.IsEqual(&b.bestChain.Tip().hash) {
+		traceData.CommitRevision(mainChainExtendRevision, time.Now(), structure.RevisionDataMainChainExtendFinal{
+			OK: false,
+		})
 		return AssertError("connectBlock must be called with a block " +
 			"that extends the main chain")
 	}
 
 	// Sanity check the correct number of stxos are provided.
 	if len(stxos) != countSpentOutputs(block) {
-		// TODO 像这样的可能都需要更新 revision commit，再讨论一下，暂时先这样，可能和 event result op 这些一起搞
+		traceData.CommitRevision(mainChainExtendRevision, time.Now(), structure.RevisionDataMainChainExtendFinal{
+			OK: false,
+		})
 		return AssertError("connectBlock called with inconsistent " +
 			"spent transaction out information")
 	}
@@ -587,6 +596,9 @@ func (b *BlockChain) connectBlock(node *blockNode, block *btcutil.Block,
 		// Warn if any unknown new rules are either about to activate or
 		// have already been activated.
 		if err := b.warnUnknownRuleActivations(node); err != nil {
+			traceData.CommitRevision(mainChainExtendRevision, time.Now(), structure.RevisionDataMainChainExtendFinal{
+				OK: false,
+			})
 			return err
 		}
 	}
@@ -594,6 +606,9 @@ func (b *BlockChain) connectBlock(node *blockNode, block *btcutil.Block,
 	// Write any block status changes to DB before updating best state.
 	err := b.index.flushToDB()
 	if err != nil {
+		traceData.CommitRevision(mainChainExtendRevision, time.Now(), structure.RevisionDataMainChainExtendFinal{
+			OK: false,
+		})
 		return err
 	}
 
@@ -651,6 +666,9 @@ func (b *BlockChain) connectBlock(node *blockNode, block *btcutil.Block,
 		return nil
 	})
 	if err != nil {
+		traceData.CommitRevision(mainChainExtendRevision, time.Now(), structure.RevisionDataMainChainExtendFinal{
+			OK: false,
+		})
 		return err
 	}
 
@@ -677,7 +695,9 @@ func (b *BlockChain) connectBlock(node *blockNode, block *btcutil.Block,
 	b.sendNotification(NTBlockConnected, block)
 	b.chainLock.Lock()
 
-	traceData.CommitRevision(mainchainExtendRevision, time.Now(), "success")
+	traceData.CommitRevision(mainChainExtendRevision, time.Now(), structure.RevisionDataMainChainExtendFinal{
+		OK: true,
+	})
 	return nil
 }
 
@@ -822,13 +842,10 @@ func countSpentOutputs(block *btcutil.Block) int {
 //
 // This function MUST be called with the chain state lock held (for writes).
 func (b *BlockChain) reorganizeChain(detachNodes, attachNodes *list.List, traceData *bittrace.TraceData) error {
-	var chainSwapRevision = structure.NewRevision(structure.RevisionTypeChainSwap, traceData.GetSnapshotID(), structure.RevisionDataChainSwap{})
-
 	// Nothing to do if no reorganize nodes were provided.
 	if detachNodes.Len() == 0 && attachNodes.Len() == 0 {
 		return nil
 	}
-
 	// Ensure the provided nodes match the current best chain.
 	tip := b.bestChain.Tip()
 	if detachNodes.Len() != 0 {
@@ -855,6 +872,10 @@ func (b *BlockChain) reorganizeChain(detachNodes, attachNodes *list.List, traceD
 	// Track the old and new best chains heads.
 	oldBest := tip
 	newBest := tip
+
+	var chainSwapRevision = structure.NewRevision(structure.RevisionTypeChainSwap, traceData.GetSnapshotID(), structure.RevisionDataChainSwapInit{
+		OldBestBlockHash: oldBest.hash.String(),
+	})
 
 	// All of the blocks to detach and related spend journal entries needed
 	// to unspend transaction outputs in the blocks being disconnected must
@@ -1069,7 +1090,12 @@ func (b *BlockChain) reorganizeChain(detachNodes, attachNodes *list.List, traceD
 	log.Infof("REORGANIZE: New best chain head is %v (height %v)",
 		newBest.hash, newBest.height)
 
-	traceData.CommitRevision(chainSwapRevision, time.Now(), "success")
+	traceData.CommitRevision(chainSwapRevision, time.Now(), structure.RevisionDataChainSwapFinal{
+		NewBestBlockHash:    newBest.hash.String(),
+		ForkParentBlockHash: oldBest.parent.hash.String(),
+		ForkBlockHash:       forkNode.hash.String(),
+		OK:                  false,
+	})
 	return nil
 }
 
@@ -1184,21 +1210,27 @@ func (b *BlockChain) connectBestChain(node *blockNode, block *btcutil.Block, fla
 	// We're extending (or creating) a side chain, but the cumulative
 	// work for this new side chain is not enough to make it the new chain.
 	if node.workSum.Cmp(b.bestChain.Tip().workSum) <= 0 {
-		var sidechainExtendRevision = structure.NewRevision(structure.RevisionTypeSideChainExtend, traceData.GetSnapshotID(), structure.RevisionDataSideChainExtend{})
+		var sideChainExtendRevision = structure.NewRevision(structure.RevisionTypeSideChainExtend, traceData.GetSnapshotID(), structure.RevisionDataSideChainExtendInit{
+			ForkParentBlockHash: parentHash.String(),
+		})
 		// Log information about how the block is forking the chain.
 		fork := b.bestChain.FindFork(node)
 		if fork.hash.IsEqual(parentHash) {
 			log.Infof("FORK: Block %v forks the chain at height %d"+
 				"/block %v, but does not cause a reorganize",
 				node.hash, fork.height, fork.hash)
-			// TODO 这里的 context 是 new side chain
-			traceData.CommitRevision(sidechainExtendRevision, time.Now(), "success")
+			traceData.CommitRevision(sideChainExtendRevision, time.Now(), structure.RevisionDataSideChainExtendFinal{
+				ForkBlockHash: fork.hash.String(),
+				IsExtend:      false,
+			})
 		} else {
 			log.Infof("EXTEND FORK: Block %v extends a side chain "+
 				"which forks the chain at height %d/block %v",
 				node.hash, fork.height, fork.hash)
-			// TODO 这里的 context 是 extend side chain
-			traceData.CommitRevision(sidechainExtendRevision, time.Now(), "success")
+			traceData.CommitRevision(sideChainExtendRevision, time.Now(), structure.RevisionDataSideChainExtendFinal{
+				ForkBlockHash: fork.hash.String(),
+				IsExtend:      true,
+			})
 		}
 
 		return false, nil

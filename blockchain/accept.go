@@ -27,7 +27,7 @@ import (
 //
 // This function MUST be called with the chain state lock held (for writes).
 func (b *BlockChain) maybeAcceptBlock(block *btcutil.Block, flags BehaviorFlags, traceData *bittrace.TraceData) (bool, error) {
-	var chainVerifyRevision = structure.NewRevision(structure.RevisionTypeChainVerify, traceData.GetSnapshotID(), structure.RevisionDataChainVerify{})
+	var chainVerifyRevision = structure.NewRevision(structure.RevisionTypeChainVerify, traceData.GetSnapshotID(), structure.RevisionDataChainVerifyInit{})
 
 	// The height of this block is one more than the referenced previous
 	// block.
@@ -35,11 +35,11 @@ func (b *BlockChain) maybeAcceptBlock(block *btcutil.Block, flags BehaviorFlags,
 	prevNode := b.index.LookupNode(prevHash)
 	if prevNode == nil {
 		str := fmt.Sprintf("previous block %s is unknown", prevHash)
-		traceData.CommitRevision(chainVerifyRevision, time.Now(), "failed")
+		traceData.CommitRevision(chainVerifyRevision, time.Now(), structure.RevisionDataChainVerifyFinal{})
 		return false, ruleError(ErrPreviousBlockUnknown, str)
 	} else if b.index.NodeStatus(prevNode).KnownInvalid() {
 		str := fmt.Sprintf("previous block %s is known to be invalid", prevHash)
-		traceData.CommitRevision(chainVerifyRevision, time.Now(), "failed")
+		traceData.CommitRevision(chainVerifyRevision, time.Now(), structure.RevisionDataChainVerifyFinal{})
 		return false, ruleError(ErrInvalidAncestorBlock, str)
 	}
 
@@ -50,11 +50,11 @@ func (b *BlockChain) maybeAcceptBlock(block *btcutil.Block, flags BehaviorFlags,
 	// position of the block within the block chain.
 	err := b.checkBlockContext(block, prevNode, flags)
 	if err != nil {
-		traceData.CommitRevision(chainVerifyRevision, time.Now(), "failed")
+		traceData.CommitRevision(chainVerifyRevision, time.Now(), structure.RevisionDataChainVerifyFinal{})
 		return false, err
 	}
 
-	traceData.CommitRevision(chainVerifyRevision, time.Now(), "success")
+	traceData.CommitRevision(chainVerifyRevision, time.Now(), structure.RevisionDataChainVerifyFinal{})
 
 	// Insert the block into the database if it's not already there.  Even
 	// though it is possible the block will ultimately fail to connect, it

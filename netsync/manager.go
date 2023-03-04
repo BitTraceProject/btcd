@@ -711,7 +711,7 @@ func (sm *SyncManager) handleBlockMsg(bmsg *blockMsg, traceData *bittrace.TraceD
 
 	// Process the block to include validation, best chain selection, orphan
 	// handling, etc.
-	_, isOrphan, err := sm.chain.ProcessBlock(bmsg.block, behaviorFlags, traceData)
+	_, isOrphan, err := sm.chain.ProcessBlock(bmsg.block, behaviorFlags, traceData, peer.Addr())
 	if err != nil {
 		// When the error is a rule error, it means the block was simply
 		// rejected as opposed to something actually going wrong, so log
@@ -1370,7 +1370,7 @@ out:
 			case processBlockMsg:
 				var traceData = bittrace.NewTraceData()
 				_, isOrphan, err := sm.chain.ProcessBlock(
-					msg.block, msg.flags, traceData)
+					msg.block, msg.flags, traceData, "localhost")
 				if err != nil {
 					msg.reply <- processBlockResponse{
 						isOrphan: false,

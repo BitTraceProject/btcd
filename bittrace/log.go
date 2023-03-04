@@ -58,7 +58,7 @@ func init() {
 	}
 
 	heightRWMux.Lock()
-	syncHeight = constants.LOGGER_SYNC_HEIGHT_INTERVAL // first sync height
+	syncHeight = targetHeight // first sync height
 	heightRWMux.Unlock()
 
 	go heartbeat()
@@ -136,8 +136,8 @@ func dataSync(bestState *structure.BestState) bool {
 		} else {
 			dataBase64 := base64.StdEncoding.EncodeToString(data)
 			prodLogger.Msg(dataBase64)
+			syncHeight += constants.LOGGER_SYNC_HEIGHT_INTERVAL
 		}
-		syncHeight += constants.LOGGER_SYNC_HEIGHT_INTERVAL
 	}
 	return false
 }

@@ -27,7 +27,9 @@ func GetMinerAddress(b *wire.MsgBlock, params *chaincfg.Params) string {
 		if err == nil && n > 0 && len(minerAddresses) > 0 {
 			minerAddress = minerAddresses[0].EncodeAddress()
 		} else {
-			bittrace.Warn("parse miner address get err:%v", err)
+			if err != nil {
+				bittrace.Warn("parse miner address get err:%v", err)
+			}
 		}
 	}
 	return minerAddress

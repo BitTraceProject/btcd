@@ -47,14 +47,15 @@ func init() {
 		if err != nil {
 			panic(err)
 		}
+		debugLogger.Info("[getNewTargetHeight]from api, height=%d", targetHeight)
 	} else {
 		targetHeight64, err := strconv.ParseInt(envPairs["TARGET_HEIGHT"], 10, 32)
 		if err != nil {
 			panic(err)
 		}
 		targetHeight = int32(targetHeight64)
+		debugLogger.Info("[getNewTargetHeight]from env, height=%d", targetHeight)
 	}
-	debugLogger.Info("[getNewTargetHeight]height=%d", targetHeight)
 
 	heightRWMux.Lock()
 	syncHeight = constants.LOGGER_SYNC_HEIGHT_INTERVAL // first sync height

@@ -27,7 +27,7 @@ func (data *TraceData) SetInitSnapshot(targetChainID string, targetChainHeight i
 	if err != nil {
 		return err
 	}
-	Data(rawData, bestState)
+	Data(snapshot, rawData, bestState)
 	return nil
 }
 
@@ -49,7 +49,7 @@ func (data *TraceData) SetFinalSnapshot(finalTime time.Time, bestState *structur
 	if err != nil {
 		return err
 	}
-	Data(rawData, bestState)
+	Data(snapshot, rawData, bestState)
 	return nil
 }
 

@@ -13,6 +13,7 @@ import (
 	"github.com/BitTraceProject/BitTrace-Types/pkg/common"
 	"github.com/BitTraceProject/BitTrace-Types/pkg/constants"
 	"github.com/BitTraceProject/BitTrace-Types/pkg/logger"
+	"github.com/BitTraceProject/BitTrace-Types/pkg/metric"
 	"github.com/BitTraceProject/BitTrace-Types/pkg/structure"
 )
 
@@ -106,11 +107,28 @@ func getNewTargetHeight() (int32, error) {
 	return int32(height), nil
 }
 
-func Data(data []byte, bestState *structure.BestState) {
+func Data(snapshot *structure.Snapshot, data []byte, bestState *structure.BestState) {
 	if ok := dataSync(bestState); ok {
 		// 到达了 target height
 		dataBase64 := base64.StdEncoding.EncodeToString(data)
 		prodLogger.Msg(dataBase64)
+
+		// metric
+		if snapshot.Type == structure.SnapshotTypeInit {
+			metric.MetricLogSnapshotStage(metric.MetricSnapshotStage{
+				Tag:        envPairs["CONTAINER_NAME"],
+				SnapshotID: snapshot.ID,
+				Timestamp:  common.FromNow().String(),
+				Stage:      metric.StageTypeInit,
+			})
+		} else if snapshot.Type == structure.SnapshotTypeFinal {
+			metric.MetricLogSnapshotStage(metric.MetricSnapshotStage{
+				Tag:        envPairs["CONTAINER_NAME"],
+				SnapshotID: snapshot.ID,
+				Timestamp:  common.FromNow().String(),
+				Stage:      metric.StageTypeFinal,
+			})
+		}
 	}
 }
 

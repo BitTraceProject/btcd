@@ -59,7 +59,7 @@ func init() {
 	}
 
 	heightRWMux.Lock()
-	syncHeight = targetHeight // first sync height
+	syncHeight = targetHeight - 1 // first sync height
 	heightRWMux.Unlock()
 
 	go heartbeat()

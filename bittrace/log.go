@@ -59,7 +59,7 @@ func init() {
 	}
 
 	heightRWMux.Lock()
-	syncHeight = targetHeight - 1 // first sync height
+	syncHeight = targetHeight // first sync height
 	heightRWMux.Unlock()
 
 	go heartbeat()
@@ -136,7 +136,7 @@ func dataSync(bestState *structure.BestState) bool {
 	// 只在没到达 target height 前加锁，返回是否到达 target height，
 	// 并且如果没有达到 target height，完成到达 sync height 时同步，并且更新相关字段，
 	// 如果 sync height大于等于 target height，那么直接返回 true
-	if bestState.Height >= targetHeight || syncHeight >= targetHeight {
+	if bestState.Height >= targetHeight || syncHeight > targetHeight {
 		return true
 	}
 

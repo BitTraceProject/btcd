@@ -8,9 +8,14 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/BitTraceProject/BitTrace-Types/pkg/common"
+	"github.com/BitTraceProject/BitTrace-Types/pkg/constants"
+	"github.com/BitTraceProject/BitTrace-Types/pkg/structure"
+	"github.com/btcsuite/btcd/bittrace"
+
+	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/database"
-	"github.com/btcsuite/btcd/btcutil"
 )
 
 // BehaviorFlags is a bitmask defining tweaks to the normal behavior when
@@ -71,6 +76,7 @@ func (b *BlockChain) blockExists(hash *chainhash.Hash) (bool, error) {
 	return exists, err
 }
 
+// ZJH orphan process
 // processOrphans determines if there are any orphans which depend on the passed
 // block hash (they are no longer orphans if true) and potentially accepts them.
 // It repeats the process for the newly accepted blocks (to detect further
@@ -80,7 +86,9 @@ func (b *BlockChain) blockExists(hash *chainhash.Hash) (bool, error) {
 // are needed to pass along to maybeAcceptBlock.
 //
 // This function MUST be called with the chain state lock held (for writes).
-func (b *BlockChain) processOrphans(hash *chainhash.Hash, flags BehaviorFlags) error {
+func (b *BlockChain) processOrphans(hash *chainhash.Hash, flags BehaviorFlags, traceData *bittrace.TraceData) error {
+	var orphanProcessRevision = structure.NewRevision(structure.RevisionTypeOrphanProcess, traceData.GetSnapshotID(), structure.RevisionDataOrphanProcessInit{})
+
 	// Start with processing at least the passed hash.  Leave a little room
 	// for additional orphan blocks that need to be processed without
 	// needing to grow the array in the common case.
@@ -115,20 +123,25 @@ func (b *BlockChain) processOrphans(hash *chainhash.Hash, flags BehaviorFlags) e
 			i--
 
 			// Potentially accept the block into the block chain.
-			_, err := b.maybeAcceptBlock(orphan.block, flags)
+			isMainChain, err := b.maybeAcceptBlock(orphan.block, flags, traceData)
 			if err != nil {
 				return err
 			}
 
+			// orphan block 上了链，可能是 mainchain，也可能是 sidechain
+			traceData.CommitEventOrphan(structure.EventTypeOrphanConnect, orphan.block.Hash().String(), isMainChain)
 			// Add this block to the list of blocks to process so
 			// any orphan blocks that depend on this block are
 			// handled too.
 			processHashes = append(processHashes, orphanHash)
 		}
 	}
+
+	traceData.CommitRevision(orphanProcessRevision, time.Now(), structure.RevisionDataOrphanProcessFinal{})
 	return nil
 }
 
+// ZJH block verify
 // ProcessBlock is the main workhorse for handling insertion of new blocks into
 // the block chain.  It includes functionality such as rejecting duplicate
 // blocks, ensuring blocks follow all rules, orphan handling, and insertion into
@@ -139,34 +152,143 @@ func (b *BlockChain) processOrphans(hash *chainhash.Hash, flags BehaviorFlags) e
 // whether or not the block is an orphan.
 //
 // This function is safe for concurrent access.
-func (b *BlockChain) ProcessBlock(block *btcutil.Block, flags BehaviorFlags) (bool, bool, error) {
+func (b *BlockChain) ProcessBlock(block *btcutil.Block, flags BehaviorFlags, traceData *bittrace.TraceData, fromPeer string) (bool, bool, error) {
 	b.chainLock.Lock()
 	defer b.chainLock.Unlock()
+
+	var (
+		existInChain  bool
+		existInOrphan bool
+		isOrphan      bool
+		err           error
+	)
 
 	fastAdd := flags&BFFastAdd == BFFastAdd
 
 	blockHash := block.Hash()
 	log.Tracef("Processing block %v", blockHash)
 
+	_, existInOrphan = b.orphans[*blockHash]
+
+	// generate init snapshot
+	{
+		var (
+			forkHeight        int32 // 通过回溯 prevNode 找它
+			targetChainID     string
+			targetChainHeight int32 // 通过回溯 prevNode 计算
+			initTime          = time.Now()
+		)
+		// The height of this block is one more than the referenced previous
+		// block.
+		prevHash := &block.MsgBlock().Header.PrevBlock
+		prevNode := b.index.LookupNode(prevHash)
+
+		if prevNode != nil {
+			if prevNode.hash.IsEqual(&b.BestSnapshot().Hash) {
+				// 1 如果该区块的父亲是主链的最优
+				// 如果当前区块的前一个区块是 mainchain 的最优区块，则 forkHeight 直接赋值 0
+				forkHeight = 0
+				targetChainHeight = b.BestSnapshot().Height + 1
+			} else {
+				// 2 如果该区块的父亲不是主链的最优，继续判断是否处于一个 fork 上
+				if b.index.NodeStatus(prevNode).KnownInvalid() {
+					// 2.1 如果父亲状态未知，则他是孤儿
+					isOrphan = true
+				} else {
+					b.bestChain.mtx.Lock()
+					forkNode := b.bestChain.findFork(prevNode)
+					if forkNode != nil {
+						// 2.2 如果找得到 fork，处于侧链
+						forkHeight = forkNode.height
+						targetChainHeight = prevNode.height + 1
+					} else {
+						// 2.3 如果父亲不是主链最优且找不到其父亲，则父亲是孤儿区块，则它也是孤儿区块
+						isOrphan = true
+					}
+					b.bestChain.mtx.Unlock()
+				}
+			}
+		} else {
+			// 2 如果该区块已位于孤儿，则是孤儿区块
+			isOrphan = true
+			if isOrphan {
+				forkHeight = -1
+				targetChainHeight = block.Height()
+			}
+		}
+		if forkHeight == -1 {
+			targetChainID = constants.ORPHAN_CHAIN_ID
+		} else {
+			targetChainID = common.GenChainID(forkHeight)
+		}
+		bestState := b.BestSnapshot()
+		state := &structure.BestState{
+			Hash:            bestState.Hash.String(),
+			Height:          bestState.Height,
+			Bits:            bestState.Bits,
+			BlockSize:       bestState.BlockSize,
+			BlockWeight:     bestState.BlockWeight,
+			NumTxns:         bestState.NumTxns,
+			TotalTxns:       bestState.TotalTxns,
+			MedianTimestamp: common.FromTime(bestState.MedianTime),
+		}
+		if err := traceData.SetInitSnapshot(targetChainID, targetChainHeight, initTime, block.Hash().String(), state); err != nil {
+			bittrace.Error("%v", err)
+		}
+
+		var receiveBlockRevision = structure.NewRevision(structure.RevisionTypeBlockReceive, traceData.GetSnapshotID(), structure.RevisionDataBlockReceiveInit{
+			PeerIPAddr:      fromPeer,
+			MinerWalletAddr: GetMinerAddress(block.MsgBlock(), b.chainParams),
+		})
+		// no status change, so no event and result
+		traceData.CommitRevision(receiveBlockRevision, time.Now(), structure.RevisionDataBlockReceiveFinal{OK: true})
+	}
+	// 所有中途 return 都需要处理 revision
+
+	var blockVerifyRevision = structure.NewRevision(structure.RevisionTypeBlockVerify, traceData.GetSnapshotID(), structure.RevisionDataBlockVerifyInit{
+		Hash:           block.Hash().String(),
+		ParentHash:     block.MsgBlock().Header.PrevBlock.String(),
+		Height:         block.Height(),
+		NumTxns:        uint64(len(block.Transactions())),
+		Version:        block.MsgBlock().Header.Version,
+		Bits:           block.MsgBlock().Header.Bits,
+		WorkSum:        CalcWork(block.MsgBlock().Header.Bits).String(),
+		MerkleRootHash: block.MsgBlock().Header.MerkleRoot.String(),
+		Nonce:          block.MsgBlock().Header.Nonce,
+	})
+	// verify 1 是否已存在
 	// The block must not already exist in the main chain or side chains.
-	exists, err := b.blockExists(blockHash)
+	existInChain, err = b.blockExists(blockHash)
 	if err != nil {
 		return false, false, err
 	}
-	if exists {
+	if existInChain {
 		str := fmt.Sprintf("already have block %v", blockHash)
+		traceData.CommitRevision(blockVerifyRevision, time.Now(), structure.RevisionDataBlockVerifyFinal{
+			OK:     false,
+			Result: str,
+		})
 		return false, false, ruleError(ErrDuplicateBlock, str)
 	}
-
+	// verify 2 是否已是孤儿
 	// The block must not already exist as an orphan.
-	if _, exists := b.orphans[*blockHash]; exists {
+	if existInOrphan {
 		str := fmt.Sprintf("already have block (orphan) %v", blockHash)
+		traceData.CommitRevision(blockVerifyRevision, time.Now(), structure.RevisionDataBlockVerifyFinal{
+			OK:     false,
+			Result: str,
+		})
 		return false, false, ruleError(ErrDuplicateBlock, str)
 	}
 
+	// verify 3 是否已是孤儿
 	// Perform preliminary sanity checks on the block and its transactions.
 	err = checkBlockSanity(block, b.chainParams.PowLimit, b.timeSource, flags)
 	if err != nil {
+		traceData.CommitRevision(blockVerifyRevision, time.Now(), structure.RevisionDataBlockVerifyFinal{
+			OK:     false,
+			Result: err.Error(),
+		})
 		return false, false, err
 	}
 
@@ -179,6 +301,10 @@ func (b *BlockChain) ProcessBlock(block *btcutil.Block, flags BehaviorFlags) (bo
 	blockHeader := &block.MsgBlock().Header
 	checkpointNode, err := b.findPreviousCheckpoint()
 	if err != nil {
+		traceData.CommitRevision(blockVerifyRevision, time.Now(), structure.RevisionDataBlockVerifyFinal{
+			OK:     false,
+			Result: err.Error(),
+		})
 		return false, false, err
 	}
 	if checkpointNode != nil {
@@ -188,6 +314,10 @@ func (b *BlockChain) ProcessBlock(block *btcutil.Block, flags BehaviorFlags) (bo
 			str := fmt.Sprintf("block %v has timestamp %v before "+
 				"last checkpoint timestamp %v", blockHash,
 				blockHeader.Timestamp, checkpointTime)
+			traceData.CommitRevision(blockVerifyRevision, time.Now(), structure.RevisionDataBlockVerifyFinal{
+				OK:     false,
+				Result: str,
+			})
 			return false, false, ruleError(ErrCheckpointTimeTooOld, str)
 		}
 		if !fastAdd {
@@ -205,10 +335,17 @@ func (b *BlockChain) ProcessBlock(block *btcutil.Block, flags BehaviorFlags) (bo
 				str := fmt.Sprintf("block target difficulty of %064x "+
 					"is too low when compared to the previous "+
 					"checkpoint", currentTarget)
+				traceData.CommitRevision(blockVerifyRevision, time.Now(), structure.RevisionDataBlockVerifyFinal{
+					OK:     false,
+					Result: str,
+				})
 				return false, false, ruleError(ErrDifficultyTooLow, str)
 			}
 		}
 	}
+	traceData.CommitRevision(blockVerifyRevision, time.Now(), structure.RevisionDataBlockVerifyFinal{
+		OK: true,
+	})
 
 	// Handle orphan blocks.
 	prevHash := &blockHeader.PrevBlock
@@ -218,14 +355,14 @@ func (b *BlockChain) ProcessBlock(block *btcutil.Block, flags BehaviorFlags) (bo
 	}
 	if !prevHashExists {
 		log.Infof("Adding orphan block %v with parent %v", blockHash, prevHash)
-		b.addOrphanBlock(block)
+		b.addOrphanBlock(block, traceData)
 
 		return false, true, nil
 	}
 
 	// The block has passed all context independent checks and appears sane
 	// enough to potentially accept it into the block chain.
-	isMainChain, err := b.maybeAcceptBlock(block, flags)
+	isMainChain, err := b.maybeAcceptBlock(block, flags, traceData)
 	if err != nil {
 		return false, false, err
 	}
@@ -233,7 +370,7 @@ func (b *BlockChain) ProcessBlock(block *btcutil.Block, flags BehaviorFlags) (bo
 	// Accept any orphan blocks that depend on this block (they are
 	// no longer orphans) and repeat for those accepted blocks until
 	// there are no more.
-	err = b.processOrphans(blockHash, flags)
+	err = b.processOrphans(blockHash, flags, traceData)
 	if err != nil {
 		return false, false, err
 	}

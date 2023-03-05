@@ -14,13 +14,13 @@ import (
 
 	"github.com/btcsuite/btcd/blockchain"
 	"github.com/btcsuite/btcd/blockchain/fullblocktests"
+	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/database"
 	_ "github.com/btcsuite/btcd/database/ffldb"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
-	"github.com/btcsuite/btcd/btcutil"
 )
 
 const (
@@ -157,7 +157,7 @@ func TestFullBlocks(t *testing.T) {
 			item.Name, block.Hash(), blockHeight)
 
 		isMainChain, isOrphan, err := chain.ProcessBlock(block,
-			blockchain.BFNone)
+			blockchain.BFNone, nil)
 		if err != nil {
 			t.Fatalf("block %q (hash %s, height %d) should "+
 				"have been accepted: %v", item.Name,
@@ -190,7 +190,7 @@ func TestFullBlocks(t *testing.T) {
 		t.Logf("Testing block %s (hash %s, height %d)",
 			item.Name, block.Hash(), blockHeight)
 
-		_, _, err := chain.ProcessBlock(block, blockchain.BFNone)
+		_, _, err := chain.ProcessBlock(block, blockchain.BFNone, nil)
 		if err == nil {
 			t.Fatalf("block %q (hash %s, height %d) should not "+
 				"have been accepted", item.Name, block.Hash(),
@@ -247,7 +247,7 @@ func TestFullBlocks(t *testing.T) {
 		t.Logf("Testing block %s (hash %s, height %d)",
 			item.Name, block.Hash(), blockHeight)
 
-		_, isOrphan, err := chain.ProcessBlock(block, blockchain.BFNone)
+		_, isOrphan, err := chain.ProcessBlock(block, blockchain.BFNone, nil)
 		if err != nil {
 			// Ensure the error code is of the expected type.
 			if _, ok := err.(blockchain.RuleError); !ok {

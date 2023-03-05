@@ -12,14 +12,18 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/BitTraceProject/BitTrace-Types/pkg/common"
+	"github.com/BitTraceProject/BitTrace-Types/pkg/structure"
+	"github.com/btcsuite/btcd/bittrace"
+
 	"github.com/btcsuite/btcd/blockchain"
+	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/database"
 	"github.com/btcsuite/btcd/mempool"
 	peerpkg "github.com/btcsuite/btcd/peer"
 	"github.com/btcsuite/btcd/wire"
-	"github.com/btcsuite/btcd/btcutil"
 )
 
 const (
@@ -651,7 +655,7 @@ func (sm *SyncManager) current() bool {
 }
 
 // handleBlockMsg handles block messages from all peers.
-func (sm *SyncManager) handleBlockMsg(bmsg *blockMsg) {
+func (sm *SyncManager) handleBlockMsg(bmsg *blockMsg, traceData *bittrace.TraceData) {
 	peer := bmsg.peer
 	state, exists := sm.peerStates[peer]
 	if !exists {
@@ -707,7 +711,7 @@ func (sm *SyncManager) handleBlockMsg(bmsg *blockMsg) {
 
 	// Process the block to include validation, best chain selection, orphan
 	// handling, etc.
-	_, isOrphan, err := sm.chain.ProcessBlock(bmsg.block, behaviorFlags)
+	_, isOrphan, err := sm.chain.ProcessBlock(bmsg.block, behaviorFlags, traceData, peer.Addr())
 	if err != nil {
 		// When the error is a rule error, it means the block was simply
 		// rejected as opposed to something actually going wrong, so log
@@ -1299,6 +1303,7 @@ func (sm *SyncManager) handleInvMsg(imsg *invMsg) {
 	}
 }
 
+// ZJH receive block
 // blockHandler is the main handler for the sync manager.  It must be run as a
 // goroutine.  It processes block and inv messages in a separate goroutine
 // from the peer handlers so the block (MsgBlock) messages are handled by a
@@ -1322,9 +1327,27 @@ out:
 				msg.reply <- struct{}{}
 
 			case *blockMsg:
-				sm.handleBlockMsg(msg)
-				msg.reply <- struct{}{}
+				var traceData = bittrace.NewTraceData()
+				sm.handleBlockMsg(msg, traceData)
 
+				{
+					bestState := sm.chain.BestSnapshot()
+					state := &structure.BestState{
+						Hash:            bestState.Hash.String(),
+						Height:          bestState.Height,
+						Bits:            bestState.Bits,
+						BlockSize:       bestState.BlockSize,
+						BlockWeight:     bestState.BlockWeight,
+						NumTxns:         bestState.NumTxns,
+						TotalTxns:       bestState.TotalTxns,
+						MedianTimestamp: common.FromTime(bestState.MedianTime),
+					}
+					if err := traceData.SetFinalSnapshot(time.Now(), state); err != nil {
+						bittrace.Error("%v", err)
+					}
+				}
+
+				msg.reply <- struct{}{}
 			case *invMsg:
 				sm.handleInvMsg(msg)
 
@@ -1345,8 +1368,9 @@ out:
 				msg.reply <- peerID
 
 			case processBlockMsg:
+				var traceData = bittrace.NewTraceData()
 				_, isOrphan, err := sm.chain.ProcessBlock(
-					msg.block, msg.flags)
+					msg.block, msg.flags, traceData, "localhost")
 				if err != nil {
 					msg.reply <- processBlockResponse{
 						isOrphan: false,
@@ -1354,11 +1378,27 @@ out:
 					}
 				}
 
+				{
+					bestState := sm.chain.BestSnapshot()
+					state := &structure.BestState{
+						Hash:            bestState.Hash.String(),
+						Height:          bestState.Height,
+						Bits:            bestState.Bits,
+						BlockSize:       bestState.BlockSize,
+						BlockWeight:     bestState.BlockWeight,
+						NumTxns:         bestState.NumTxns,
+						TotalTxns:       bestState.TotalTxns,
+						MedianTimestamp: common.FromTime(bestState.MedianTime),
+					}
+					if err := traceData.SetFinalSnapshot(time.Now(), state); err != nil {
+						bittrace.Error("%v", err)
+					}
+				}
+
 				msg.reply <- processBlockResponse{
 					isOrphan: isOrphan,
 					err:      nil,
 				}
-
 			case isCurrentMsg:
 				msg.reply <- sm.current()
 
@@ -1370,7 +1410,6 @@ out:
 				log.Warnf("Invalid message type in block "+
 					"handler: %T", msg)
 			}
-
 		case <-stallTicker.C:
 			sm.handleStallSample()
 

@@ -11,6 +11,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/BitTraceProject/BitTrace-Types/pkg/structure"
+	"github.com/btcsuite/btcd/bittrace"
+
 	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
@@ -34,8 +37,9 @@ const (
 // from the block being located.
 //
 // For example, assume a block chain with a side chain as depicted below:
-// 	genesis -> 1 -> 2 -> ... -> 15 -> 16  -> 17  -> 18
-// 	                              \-> 16a -> 17a
+//
+//	genesis -> 1 -> 2 -> ... -> 15 -> 16  -> 17  -> 18
+//	                              \-> 16a -> 17a
 //
 // The block locator for block 17a would be the hashes of blocks:
 // [17a 16a 15 14 13 12 11 10 9 8 7 6 4 genesis]
@@ -276,16 +280,20 @@ func (b *BlockChain) removeOrphanBlock(orphan *orphanBlock) {
 	}
 }
 
+// ZJH orphan extend
 // addOrphanBlock adds the passed block (which is already determined to be
 // an orphan prior calling this function) to the orphan pool.  It lazily cleans
 // up any expired blocks so a separate cleanup poller doesn't need to be run.
 // It also imposes a maximum limit on the number of outstanding orphan
 // blocks and will remove the oldest received orphan block if the limit is
 // exceeded.
-func (b *BlockChain) addOrphanBlock(block *btcutil.Block) {
+func (b *BlockChain) addOrphanBlock(block *btcutil.Block, traceData *bittrace.TraceData) {
+	var orphanExtendRevision = structure.NewRevision(structure.RevisionTypeOrphanExtend, traceData.GetSnapshotID(), structure.RevisionDataOrphanExtendInit{})
+
 	// Remove expired orphan blocks.
 	for _, oBlock := range b.orphans {
 		if time.Now().After(oBlock.expiration) {
+			traceData.CommitEventOrphan(structure.EventTypeOrphanDiscard, oBlock.block.Hash().String(), false)
 			b.removeOrphanBlock(oBlock)
 			continue
 		}
@@ -300,6 +308,7 @@ func (b *BlockChain) addOrphanBlock(block *btcutil.Block) {
 	// Limit orphan blocks to prevent memory exhaustion.
 	if len(b.orphans)+1 > maxOrphanBlocks {
 		// Remove the oldest orphan to make room for the new one.
+		traceData.CommitEventOrphan(structure.EventTypeOrphanDiscard, b.oldestOrphan.block.Hash().String(), false)
 		b.removeOrphanBlock(b.oldestOrphan)
 		b.oldestOrphan = nil
 	}
@@ -322,6 +331,8 @@ func (b *BlockChain) addOrphanBlock(block *btcutil.Block) {
 	// Add to previous hash lookup index for faster dependency lookups.
 	prevHash := &block.MsgBlock().Header.PrevBlock
 	b.prevOrphans[*prevHash] = append(b.prevOrphans[*prevHash], oBlock)
+	traceData.CommitEventOrphan(structure.EventTypeOrphanHappen, oBlock.block.Hash().String(), false)
+	traceData.CommitRevision(orphanExtendRevision, time.Now(), structure.RevisionDataOrphanExtendFinal{})
 }
 
 // SequenceLock represents the converted relative lock-time in seconds, and
@@ -468,7 +479,7 @@ func (b *BlockChain) calcSequenceLock(node *blockNode, tx *btcutil.Tx, utxoView 
 // LockTimeToSequence converts the passed relative locktime to a sequence
 // number in accordance to BIP-68.
 // See: https://github.com/bitcoin/bips/blob/master/bip-0068.mediawiki
-//  * (Compatibility)
+//   - (Compatibility)
 func LockTimeToSequence(isSeconds bool, locktime uint32) uint32 {
 	// If we're expressing the relative lock time in blocks, then the
 	// corresponding sequence number is simply the desired input age.
@@ -543,6 +554,7 @@ func (b *BlockChain) getReorganizeNodes(node *blockNode) (*list.List, *list.List
 	return detachNodes, attachNodes
 }
 
+// ZJH main extend
 // connectBlock handles connecting the passed node/block to the end of the main
 // (best) chain.
 //
@@ -555,17 +567,26 @@ func (b *BlockChain) getReorganizeNodes(node *blockNode) (*list.List, *list.List
 //
 // This function MUST be called with the chain state lock held (for writes).
 func (b *BlockChain) connectBlock(node *blockNode, block *btcutil.Block,
-	view *UtxoViewpoint, stxos []SpentTxOut) error {
+	view *UtxoViewpoint, stxos []SpentTxOut, traceData *bittrace.TraceData) error {
+	var mainChainExtendRevision = structure.NewRevision(structure.RevisionTypeMainChainExtend, traceData.GetSnapshotID(), structure.RevisionDataMainChainExtendInit{
+		BlockHash: node.hash.String(),
+	})
 
 	// Make sure it's extending the end of the best chain.
 	prevHash := &block.MsgBlock().Header.PrevBlock
 	if !prevHash.IsEqual(&b.bestChain.Tip().hash) {
+		traceData.CommitRevision(mainChainExtendRevision, time.Now(), structure.RevisionDataMainChainExtendFinal{
+			OK: false,
+		})
 		return AssertError("connectBlock must be called with a block " +
 			"that extends the main chain")
 	}
 
 	// Sanity check the correct number of stxos are provided.
 	if len(stxos) != countSpentOutputs(block) {
+		traceData.CommitRevision(mainChainExtendRevision, time.Now(), structure.RevisionDataMainChainExtendFinal{
+			OK: false,
+		})
 		return AssertError("connectBlock called with inconsistent " +
 			"spent transaction out information")
 	}
@@ -575,6 +596,9 @@ func (b *BlockChain) connectBlock(node *blockNode, block *btcutil.Block,
 		// Warn if any unknown new rules are either about to activate or
 		// have already been activated.
 		if err := b.warnUnknownRuleActivations(node); err != nil {
+			traceData.CommitRevision(mainChainExtendRevision, time.Now(), structure.RevisionDataMainChainExtendFinal{
+				OK: false,
+			})
 			return err
 		}
 	}
@@ -582,6 +606,9 @@ func (b *BlockChain) connectBlock(node *blockNode, block *btcutil.Block,
 	// Write any block status changes to DB before updating best state.
 	err := b.index.flushToDB()
 	if err != nil {
+		traceData.CommitRevision(mainChainExtendRevision, time.Now(), structure.RevisionDataMainChainExtendFinal{
+			OK: false,
+		})
 		return err
 	}
 
@@ -639,6 +666,9 @@ func (b *BlockChain) connectBlock(node *blockNode, block *btcutil.Block,
 		return nil
 	})
 	if err != nil {
+		traceData.CommitRevision(mainChainExtendRevision, time.Now(), structure.RevisionDataMainChainExtendFinal{
+			OK: false,
+		})
 		return err
 	}
 
@@ -665,6 +695,9 @@ func (b *BlockChain) connectBlock(node *blockNode, block *btcutil.Block,
 	b.sendNotification(NTBlockConnected, block)
 	b.chainLock.Lock()
 
+	traceData.CommitRevision(mainChainExtendRevision, time.Now(), structure.RevisionDataMainChainExtendFinal{
+		OK: true,
+	})
 	return nil
 }
 
@@ -808,12 +841,11 @@ func countSpentOutputs(block *btcutil.Block) int {
 // This function may modify node statuses in the block index without flushing.
 //
 // This function MUST be called with the chain state lock held (for writes).
-func (b *BlockChain) reorganizeChain(detachNodes, attachNodes *list.List) error {
+func (b *BlockChain) reorganizeChain(detachNodes, attachNodes *list.List, traceData *bittrace.TraceData) error {
 	// Nothing to do if no reorganize nodes were provided.
 	if detachNodes.Len() == 0 && attachNodes.Len() == 0 {
 		return nil
 	}
-
 	// Ensure the provided nodes match the current best chain.
 	tip := b.bestChain.Tip()
 	if detachNodes.Len() != 0 {
@@ -840,6 +872,10 @@ func (b *BlockChain) reorganizeChain(detachNodes, attachNodes *list.List) error 
 	// Track the old and new best chains heads.
 	oldBest := tip
 	newBest := tip
+
+	var chainSwapRevision = structure.NewRevision(structure.RevisionTypeChainSwap, traceData.GetSnapshotID(), structure.RevisionDataChainSwapInit{
+		OldBestBlockHash: oldBest.hash.String(),
+	})
 
 	// All of the blocks to detach and related spend journal entries needed
 	// to unspend transaction outputs in the blocks being disconnected must
@@ -1037,7 +1073,7 @@ func (b *BlockChain) reorganizeChain(detachNodes, attachNodes *list.List) error 
 		}
 
 		// Update the database and chain state.
-		err = b.connectBlock(n, block, view, stxos)
+		err = b.connectBlock(n, block, view, stxos, traceData)
 		if err != nil {
 			return err
 		}
@@ -1054,9 +1090,16 @@ func (b *BlockChain) reorganizeChain(detachNodes, attachNodes *list.List) error 
 	log.Infof("REORGANIZE: New best chain head is %v (height %v)",
 		newBest.hash, newBest.height)
 
+	traceData.CommitRevision(chainSwapRevision, time.Now(), structure.RevisionDataChainSwapFinal{
+		NewBestBlockHash:    newBest.hash.String(),
+		ForkParentBlockHash: oldBest.parent.hash.String(),
+		ForkBlockHash:       forkNode.hash.String(),
+		OK:                  false,
+	})
 	return nil
 }
 
+// ZJH main extend, side extend, chain swap
 // connectBestChain handles connecting the passed block to the chain while
 // respecting proper chain selection according to the chain with the most
 // proof of work.  In the typical case, the new block simply extends the main
@@ -1067,11 +1110,11 @@ func (b *BlockChain) reorganizeChain(detachNodes, attachNodes *list.List) error 
 // a reorganization to become the main chain).
 //
 // The flags modify the behavior of this function as follows:
-//  - BFFastAdd: Avoids several expensive transaction validation operations.
-//    This is useful when using checkpoints.
+//   - BFFastAdd: Avoids several expensive transaction validation operations.
+//     This is useful when using checkpoints.
 //
 // This function MUST be called with the chain state lock held (for writes).
-func (b *BlockChain) connectBestChain(node *blockNode, block *btcutil.Block, flags BehaviorFlags) (bool, error) {
+func (b *BlockChain) connectBestChain(node *blockNode, block *btcutil.Block, flags BehaviorFlags, traceData *bittrace.TraceData) (bool, error) {
 	fastAdd := flags&BFFastAdd == BFFastAdd
 
 	flushIndexState := func() {
@@ -1130,8 +1173,9 @@ func (b *BlockChain) connectBestChain(node *blockNode, block *btcutil.Block, fla
 			}
 		}
 
+		// ZJH main chain extend
 		// Connect the block to the main chain.
-		err := b.connectBlock(node, block, view, stxos)
+		err := b.connectBlock(node, block, view, stxos, traceData)
 		if err != nil {
 			// If we got hit with a rule error, then we'll mark
 			// that status of the block as invalid and flush the
@@ -1162,24 +1206,37 @@ func (b *BlockChain) connectBestChain(node *blockNode, block *btcutil.Block, fla
 			block.Hash())
 	}
 
+	// ZJH side chain extend
 	// We're extending (or creating) a side chain, but the cumulative
 	// work for this new side chain is not enough to make it the new chain.
 	if node.workSum.Cmp(b.bestChain.Tip().workSum) <= 0 {
+		var sideChainExtendRevision = structure.NewRevision(structure.RevisionTypeSideChainExtend, traceData.GetSnapshotID(), structure.RevisionDataSideChainExtendInit{
+			ForkParentBlockHash: parentHash.String(),
+		})
 		// Log information about how the block is forking the chain.
 		fork := b.bestChain.FindFork(node)
 		if fork.hash.IsEqual(parentHash) {
 			log.Infof("FORK: Block %v forks the chain at height %d"+
 				"/block %v, but does not cause a reorganize",
 				node.hash, fork.height, fork.hash)
+			traceData.CommitRevision(sideChainExtendRevision, time.Now(), structure.RevisionDataSideChainExtendFinal{
+				ForkBlockHash: fork.hash.String(),
+				IsExtend:      false,
+			})
 		} else {
 			log.Infof("EXTEND FORK: Block %v extends a side chain "+
 				"which forks the chain at height %d/block %v",
 				node.hash, fork.height, fork.hash)
+			traceData.CommitRevision(sideChainExtendRevision, time.Now(), structure.RevisionDataSideChainExtendFinal{
+				ForkBlockHash: fork.hash.String(),
+				IsExtend:      true,
+			})
 		}
 
 		return false, nil
 	}
 
+	// ZJH chain swap
 	// We're extending (or creating) a side chain and the cumulative work
 	// for this new side chain is more than the old best chain, so this side
 	// chain needs to become the main chain.  In order to accomplish that,
@@ -1191,7 +1248,7 @@ func (b *BlockChain) connectBestChain(node *blockNode, block *btcutil.Block, fla
 
 	// Reorganize the chain.
 	log.Infof("REORGANIZE: Block %v is causing a reorganize.", node.hash)
-	err := b.reorganizeChain(detachNodes, attachNodes)
+	err := b.reorganizeChain(detachNodes, attachNodes, traceData)
 
 	// Either getReorganizeNodes or reorganizeChain could have made unsaved
 	// changes to the block index, so flush regardless of whether there was an
@@ -1207,8 +1264,8 @@ func (b *BlockChain) connectBestChain(node *blockNode, block *btcutil.Block, fla
 // isCurrent returns whether or not the chain believes it is current.  Several
 // factors are used to guess, but the key factors that allow the chain to
 // believe it is current are:
-//  - Latest block height is after the latest checkpoint (if enabled)
-//  - Latest block has a timestamp newer than 24 hours ago
+//   - Latest block height is after the latest checkpoint (if enabled)
+//   - Latest block has a timestamp newer than 24 hours ago
 //
 // This function MUST be called with the chain state lock held (for reads).
 func (b *BlockChain) isCurrent() bool {
@@ -1231,8 +1288,8 @@ func (b *BlockChain) isCurrent() bool {
 // IsCurrent returns whether or not the chain believes it is current.  Several
 // factors are used to guess, but the key factors that allow the chain to
 // believe it is current are:
-//  - Latest block height is after the latest checkpoint (if enabled)
-//  - Latest block has a timestamp newer than 24 hours ago
+//   - Latest block height is after the latest checkpoint (if enabled)
+//   - Latest block has a timestamp newer than 24 hours ago
 //
 // This function is safe for concurrent access.
 func (b *BlockChain) IsCurrent() bool {
@@ -1467,11 +1524,11 @@ func (b *BlockChain) IntervalBlockHashes(endHash *chainhash.Hash, interval int,
 //
 // In addition, there are two special cases:
 //
-// - When no locators are provided, the stop hash is treated as a request for
-//   that block, so it will either return the node associated with the stop hash
-//   if it is known, or nil if it is unknown
-// - When locators are provided, but none of them are known, nodes starting
-//   after the genesis block will be returned
+//   - When no locators are provided, the stop hash is treated as a request for
+//     that block, so it will either return the node associated with the stop hash
+//     if it is known, or nil if it is unknown
+//   - When locators are provided, but none of them are known, nodes starting
+//     after the genesis block will be returned
 //
 // This is primarily a helper function for the locateBlocks and locateHeaders
 // functions.
@@ -1555,11 +1612,11 @@ func (b *BlockChain) locateBlocks(locator BlockLocator, hashStop *chainhash.Hash
 //
 // In addition, there are two special cases:
 //
-// - When no locators are provided, the stop hash is treated as a request for
-//   that block, so it will either return the stop hash itself if it is known,
-//   or nil if it is unknown
-// - When locators are provided, but none of them are known, hashes starting
-//   after the genesis block will be returned
+//   - When no locators are provided, the stop hash is treated as a request for
+//     that block, so it will either return the stop hash itself if it is known,
+//     or nil if it is unknown
+//   - When locators are provided, but none of them are known, hashes starting
+//     after the genesis block will be returned
 //
 // This function is safe for concurrent access.
 func (b *BlockChain) LocateBlocks(locator BlockLocator, hashStop *chainhash.Hash, maxHashes uint32) []chainhash.Hash {
@@ -1600,11 +1657,11 @@ func (b *BlockChain) locateHeaders(locator BlockLocator, hashStop *chainhash.Has
 //
 // In addition, there are two special cases:
 //
-// - When no locators are provided, the stop hash is treated as a request for
-//   that header, so it will either return the header for the stop hash itself
-//   if it is known, or nil if it is unknown
-// - When locators are provided, but none of them are known, headers starting
-//   after the genesis block will be returned
+//   - When no locators are provided, the stop hash is treated as a request for
+//     that header, so it will either return the header for the stop hash itself
+//     if it is known, or nil if it is unknown
+//   - When locators are provided, but none of them are known, headers starting
+//     after the genesis block will be returned
 //
 // This function is safe for concurrent access.
 func (b *BlockChain) LocateHeaders(locator BlockLocator, hashStop *chainhash.Hash) []wire.BlockHeader {

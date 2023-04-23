@@ -293,7 +293,7 @@ func (b *BlockChain) addOrphanBlock(block *btcutil.Block, traceData *bittrace.Tr
 	// Remove expired orphan blocks.
 	for _, oBlock := range b.orphans {
 		if time.Now().After(oBlock.expiration) {
-			traceData.CommitEventOrphan(structure.EventTypeOrphanDiscard, oBlock.block.Hash().String(), false)
+			traceData.CommitEventOrphan(structure.EventTypeOrphanDiscard, oBlock.block.MsgBlock().Header.PrevBlock.String(), oBlock.block.Hash().String(), false)
 			b.removeOrphanBlock(oBlock)
 			continue
 		}
@@ -308,7 +308,7 @@ func (b *BlockChain) addOrphanBlock(block *btcutil.Block, traceData *bittrace.Tr
 	// Limit orphan blocks to prevent memory exhaustion.
 	if len(b.orphans)+1 > maxOrphanBlocks {
 		// Remove the oldest orphan to make room for the new one.
-		traceData.CommitEventOrphan(structure.EventTypeOrphanDiscard, b.oldestOrphan.block.Hash().String(), false)
+		traceData.CommitEventOrphan(structure.EventTypeOrphanDiscard, b.oldestOrphan.block.MsgBlock().Header.PrevBlock.String(), b.oldestOrphan.block.Hash().String(), false)
 		b.removeOrphanBlock(b.oldestOrphan)
 		b.oldestOrphan = nil
 	}
@@ -331,7 +331,7 @@ func (b *BlockChain) addOrphanBlock(block *btcutil.Block, traceData *bittrace.Tr
 	// Add to previous hash lookup index for faster dependency lookups.
 	prevHash := &block.MsgBlock().Header.PrevBlock
 	b.prevOrphans[*prevHash] = append(b.prevOrphans[*prevHash], oBlock)
-	traceData.CommitEventOrphan(structure.EventTypeOrphanHappen, oBlock.block.Hash().String(), false)
+	traceData.CommitEventOrphan(structure.EventTypeOrphanHappen, oBlock.block.MsgBlock().Header.PrevBlock.String(), oBlock.block.Hash().String(), false)
 	traceData.CommitRevision(orphanExtendRevision, time.Now(), structure.RevisionDataOrphanExtendFinal{})
 }
 

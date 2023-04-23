@@ -129,7 +129,7 @@ func (b *BlockChain) processOrphans(hash *chainhash.Hash, flags BehaviorFlags, t
 			}
 
 			// orphan block 上了链，可能是 mainchain，也可能是 sidechain
-			traceData.CommitEventOrphan(structure.EventTypeOrphanConnect, orphan.block.Hash().String(), isMainChain)
+			traceData.CommitEventOrphan(structure.EventTypeOrphanConnect, orphan.block.MsgBlock().Header.PrevBlock.String(), orphan.block.Hash().String(), isMainChain)
 			// Add this block to the list of blocks to process so
 			// any orphan blocks that depend on this block are
 			// handled too.
@@ -281,7 +281,7 @@ func (b *BlockChain) ProcessBlock(block *btcutil.Block, flags BehaviorFlags, tra
 		return false, false, ruleError(ErrDuplicateBlock, str)
 	}
 
-	// verify 3 是否已是孤儿
+	// verify 3
 	// Perform preliminary sanity checks on the block and its transactions.
 	err = checkBlockSanity(block, b.chainParams.PowLimit, b.timeSource, flags)
 	if err != nil {

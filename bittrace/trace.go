@@ -31,8 +31,8 @@ func (data *TraceData) SetInitSnapshot(targetChainID string, targetChainHeight i
 	return nil
 }
 
-func (data *TraceData) CommitEventOrphan(t structure.EventType, blockHash string, connectMainChain bool) {
-	eventOrphan := structure.NewEventOrphan(t, data.GetSnapshotID(), blockHash, connectMainChain)
+func (data *TraceData) CommitEventOrphan(t structure.EventType, parentBlockHash, blockHash string, connectMainChain bool) {
+	eventOrphan := structure.NewEventOrphan(t, data.GetSnapshotID(), parentBlockHash, blockHash, connectMainChain)
 	data.initSnapshot.CommitOrphanEvent(eventOrphan)
 }
 

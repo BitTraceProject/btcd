@@ -7,16 +7,17 @@ package main
 import (
 	"encoding/binary"
 	"fmt"
+	"github.com/btcsuite/btcd/bittrace"
 	"io"
 	"sync"
 	"time"
 
 	"github.com/btcsuite/btcd/blockchain"
 	"github.com/btcsuite/btcd/blockchain/indexers"
+	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/database"
 	"github.com/btcsuite/btcd/wire"
-	"github.com/btcsuite/btcd/btcutil"
 )
 
 var zeroHash = chainhash.Hash{}
@@ -130,7 +131,7 @@ func (bi *blockImporter) processBlock(serializedBlock []byte) (bool, error) {
 	// Ensure the blocks follows all of the chain rules and match up to the
 	// known checkpoints.
 	isMainChain, isOrphan, err := bi.chain.ProcessBlock(block,
-		blockchain.BFFastAdd)
+		blockchain.BFFastAdd, bittrace.NewTraceData(), "")
 	if err != nil {
 		return false, err
 	}
